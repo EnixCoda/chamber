@@ -1,2 +1,0 @@
-# whisper
-Created with CodeSandbox
