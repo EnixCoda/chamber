@@ -1,17 +1,25 @@
 {
-    "include": [
-        "./src/*"
+  "include": [
+    "./src/*"
+  ],
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES6",
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "Node",
+    "lib": [
+      "dom",
+      "es2015"
     ],
-    "compilerOptions": {
-        "strict": true,
-        "target": "ES6",
-        "allowSyntheticDefaultImports": true,
-        "moduleResolution": "Node",
-        "lib": [
-            "dom",
-            "es2015"
-        ],
-        "jsx": "react",
-        "baseUrl": "src"
-    }
+    "jsx": "react",
+    "baseUrl": "src",
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "esnext",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true
+  }
 }

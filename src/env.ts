@@ -1,4 +1,6 @@
-export const SERVER_HOST = `//pziok.sse.codesandbox.io`
+export const SERVER_HOST = process.env.REACT_APP_SERVER_HOST
+
+if (!SERVER_HOST) throw new Error(`No server host`)
 
 export const STUN_SERVERS = [
   'stun:stun1.l.google.com:19302',
