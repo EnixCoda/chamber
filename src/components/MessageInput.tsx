@@ -1,6 +1,6 @@
-import * as React from 'react'
-import { TextField, Button, Grid, Tooltip } from '@material-ui/core'
+import { Box, IconButton, TextField, Tooltip } from '@material-ui/core'
 import { Send } from '@material-ui/icons'
+import * as React from 'react'
 
 export function MessageInput({
   speak,
@@ -23,34 +23,24 @@ export function MessageInput({
 
   return (
     <Tooltip open title={typingsDescription}>
-      <div style={{ padding: 8 }}>
-        <Grid container alignItems="flex-end" spacing={1}>
-          <Grid item xs={10}>
-            <TextField
-              fullWidth
-              label="Say something..."
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (!blockSend && e.keyCode === 13) {
-                  sendInput()
-                }
-              }}
-            />
-          </Grid>
-          <Grid item xs={2}>
-            <Button
-              fullWidth
-              variant="contained"
-              color="primary"
-              disabled={blockSend}
-              onClick={sendInput}
-            >
-              <Send />
-            </Button>
-          </Grid>
-        </Grid>
-      </div>
+      <Box display="flex" alignItems="flex-end" padding={1}>
+        <Box flex="1">
+          <TextField
+            fullWidth
+            label="Say something..."
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (!blockSend && e.keyCode === 13) {
+                sendInput()
+              }
+            }}
+          />
+        </Box>
+        <IconButton color="primary" disabled={blockSend} onClick={sendInput}>
+          <Send />
+        </IconButton>
+      </Box>
     </Tooltip>
   )
 }

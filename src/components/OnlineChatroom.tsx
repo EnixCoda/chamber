@@ -1,6 +1,7 @@
 import {
   AppBar,
   Box,
+  Button,
   Divider,
   Drawer,
   Grid,
@@ -58,41 +59,45 @@ export function OnlineChatroom({
             >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6">Whisper</Typography>
+            <Typography variant="h6">
+              Whisper{state !== 'open' && '(Offline)'}
+            </Typography>
             <Box flex="1" />
             {state !== 'open' && (
-              <div>
-                <Typography color="error">Disconnected</Typography>
-                <Tooltip title="Refresh to reconnect">
-                  <IconButton
-                    size="small"
-                    onClick={() => window.location.reload()}
-                  >
-                    <Refresh />
-                  </IconButton>
-                </Tooltip>
-              </div>
+              <Tooltip title="Refresh to reconnect">
+                <IconButton
+                  size="small"
+                  onClick={() => window.location.reload()}
+                >
+                  <Refresh />
+                </IconButton>
+              </Tooltip>
             )}
+            <ShareLink />
           </Toolbar>
           <Drawer open={open} onClose={() => setOpen(false)}>
-            <RoomInfo names={names} setName={setName} webrtc={webrtc} />
+            <Box display="flex" flexDirection="column" height="100%">
+              <Box flex="1" overflow="auto">
+                <RoomInfo names={names} setName={setName} webrtc={webrtc} />
+              </Box>
+              <Box padding={2}>
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    exitRoom()
+                  }}
+                  startIcon={<KeyboardBackspace />}
+                >
+                  Leave
+                </Button>
+              </Box>
+            </Box>
           </Drawer>
         </AppBar>
         <Media webrtc={webrtc} names={names} />
         <Grid item style={{ flex: 1, overflowY: 'auto' }}>
           <MessageList names={names} messages={messages} />
         </Grid>
-        <div>
-          <IconButton
-            onClick={(e) => {
-              e.stopPropagation()
-              exitRoom()
-            }}
-          >
-            <KeyboardBackspace />
-          </IconButton>
-          <ShareLink />
-        </div>
         <Divider />
         <Grid item>
           <MessageInput

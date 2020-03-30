@@ -1,6 +1,6 @@
-import * as React from 'react'
-import { Typography, CircularProgress } from '@material-ui/core'
+import { CircularProgress, Typography } from '@material-ui/core'
 import { SERVER_HOST } from 'env'
+import * as React from 'react'
 
 export function WakeServer({
   timeout = 10 * 1000,
@@ -15,12 +15,11 @@ export function WakeServer({
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
-      const search = new URLSearchParams()
-      search.append('from', window.location.href)
+      const search = new URLSearchParams({ from: window.location.href })
       window.location.href = SERVER_HOST + `?` + search.toString()
     }, timeout)
     let cancelled = false
-    const deffect = () => {
+    const cancel = () => {
       cancelled = true
       clearTimeout(timer)
     }
@@ -28,11 +27,11 @@ export function WakeServer({
       const awake = await isAwake()
       if (awake) {
         if (!cancelled) onAwake()
-        deffect()
+        cancel()
       }
     })()
 
-    return deffect
+    return cancel
   }, [timeout, isAwake, onAwake])
 
   // count down

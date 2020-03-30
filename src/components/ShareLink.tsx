@@ -1,4 +1,4 @@
-import { IconButton, Snackbar } from '@material-ui/core'
+import { IconButton, Snackbar, Tooltip } from '@material-ui/core'
 import { Share } from '@material-ui/icons'
 import { Alert } from '@material-ui/lab'
 import * as React from 'react'
@@ -9,15 +9,18 @@ export function ShareLink() {
   const [open, setOpen] = React.useState(false)
   return (
     <>
-      <IconButton
-        onClick={(e) => {
-          e.stopPropagation()
-          setOpen(true)
-          copyToClipboard(window.location.href)
-        }}
-      >
-        <Share />
-      </IconButton>
+      <Tooltip title="Invite people">
+        <IconButton
+          color="inherit"
+          onClick={(e) => {
+            e.stopPropagation()
+            setOpen(true)
+            copyToClipboard(window.location.href)
+          }}
+        >
+          <Share />
+        </IconButton>
+      </Tooltip>
       <Snackbar
         open={open}
         onClose={() => setOpen(false)}

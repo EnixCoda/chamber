@@ -1,16 +1,16 @@
+import { Box, Button, IconButton } from '@material-ui/core'
+import {
+  Block,
+  Mic,
+  MicOff,
+  Videocam,
+  Visibility,
+  VisibilityOff,
+} from '@material-ui/icons'
+import { useMedia } from 'hooks/useMedia'
 import * as React from 'react'
 import { useUpdateEffect } from 'react-use'
 import { OnlineWebRTCClient, User } from 'utils/WebRTCClient'
-import { useMedia } from 'hooks/useMedia'
-import { Box, IconButton, Button } from '@material-ui/core'
-import {
-  MicOff,
-  Mic,
-  Visibility,
-  VisibilityOff,
-  Videocam,
-  Block,
-} from '@material-ui/icons'
 
 export function Media({
   webrtc,
@@ -26,8 +26,7 @@ export function Media({
   return (
     <>
       {stream ? (
-        <Mutor
-          stream={stream}
+        <ConstraintsMutator
           constraints={constraints}
           setConstraints={setConstraints}
         />
@@ -52,14 +51,12 @@ export function Media({
   )
 }
 
-function Mutor({
-  stream,
+function ConstraintsMutator({
   constraints,
   setConstraints,
 }: {
   constraints: MediaStreamConstraints
   setConstraints(constraints: MediaStreamConstraints): void
-  stream: MediaStream
 }) {
   const [videoOn, setVideoOn] = React.useState(Boolean(constraints.video))
   const [audioOn, setAudioOn] = React.useState(Boolean(constraints.audio))
