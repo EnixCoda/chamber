@@ -12,11 +12,9 @@ export function Hall({
     return search.get('room') || ''
   })
   React.useEffect(() => {
-    window.history.replaceState(
-      null,
-      '',
-      '?' + new URLSearchParams({ room }).toString(),
-    )
+    const search = new URLSearchParams(window.location.search)
+    search.set('room', room)
+    window.history.replaceState(null, '', '?' + search.toString())
   }, [room])
   const [value, setValue] = React.useState(
     room ||
