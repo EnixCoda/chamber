@@ -60,7 +60,7 @@ export function OnlineChatroom({
               <MenuIcon />
             </IconButton>
             <Typography variant="h6">
-              Whisper{state !== 'open' && '(Offline)'}
+              Chamber{state !== 'open' && '(Offline)'}
             </Typography>
             <Box flex="1" />
             {state !== 'open' && (
