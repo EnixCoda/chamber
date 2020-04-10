@@ -15,7 +15,7 @@ export function SetServer({
 }) {
   const [serverInput, setServerInput] = React.useState(() => {
     const search = new URLSearchParams(window.location.search)
-    return search.get('signaling') || SERVER_HOST || ''
+    return search.get('server') || SERVER_HOST || ''
   })
   const [server, setServer] = React.useState(
     () => parseInput(serverInput) || '',
