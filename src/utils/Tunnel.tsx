@@ -1,12 +1,13 @@
-import { SERVER_HOST } from 'env'
 import { EventHub } from './EventHub'
 
 export class Tunnel {
   private connection: WebSocket
+  serverHost: string
   messageHub = new EventHub<[any]>()
   stateHub = new EventHub<[Tunnel['state']]>()
 
-  constructor() {
+  constructor(serverHost: string) {
+    this.serverHost = serverHost
     this.connection = this.connect()
   }
 
@@ -28,7 +29,7 @@ export class Tunnel {
   connect() {
     this.disconnect()
 
-    const connection = new WebSocket(`wss:${SERVER_HOST}`)
+    const connection = new WebSocket(`wss://${this.serverHost}`)
     this.connection = connection
 
     connection.addEventListener('open', () => this.stateHub.emit(this.state))

@@ -7,11 +7,13 @@ import { OnlineChatroom } from './OnlineChatroom'
 export function Chatroom({
   room,
   exitRoom,
+  serverHost,
 }: {
   room: string
   exitRoom(): void
+  serverHost: string
 }) {
-  const webrtc = useWebRTC(room)
+  const webrtc = useWebRTC(serverHost, room)
   if (!webrtc.user) {
     return (
       <div

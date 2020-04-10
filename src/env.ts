@@ -1,9 +1,5 @@
-const search = new URLSearchParams(window.location.search)
-
-export const SERVER_HOST =
-  search.get('signaling') || process.env.REACT_APP_SERVER_HOST
-
-if (!SERVER_HOST) throw new Error(`No server host`)
+export const SERVER_HOST = process.env.REACT_APP_SERVER_HOST
+export const DEFAULT_SERVER = process.env.REACT_APP_DEFAULT_SERVER
 
 export const STUN_SERVERS = [
   'stun:stun1.l.google.com:19302',

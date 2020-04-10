@@ -1,12 +1,12 @@
 import * as React from 'react'
 import { WebRTCClient } from 'utils/WebRTCClient'
 
-export function useWebRTC(room: string) {
+export function useWebRTC(serverHost: string, room: string) {
   const [, setCount] = React.useState(0)
 
   const [client] = React.useState(
     () =>
-      new WebRTCClient(room, function inc() {
+      new WebRTCClient(serverHost, room, function inc() {
         setCount((count) => count + 1)
       }),
   )

@@ -1,22 +1,21 @@
 import { CircularProgress, Typography } from '@material-ui/core'
-import { SERVER_HOST } from 'env'
 import * as React from 'react'
 
+const timeout = 10 * 1000
+
 export function WakeServer({
-  timeout = 10 * 1000,
-  isAwake,
-  onAwake,
-}: {
-  isAwake(): Promise<boolean>
-  onAwake(): void
-  timeout?: number
-}) {
+  serverHost,
+  children,
+}: React.PropsWithChildren<{
+  serverHost: string
+}>) {
+  const [awake, setAwake] = React.useState(false)
   const [showHint, setShowHint] = React.useState(false)
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
-      const search = new URLSearchParams({ from: window.location.href })
-      window.location.href = SERVER_HOST + `?` + search.toString()
+      const search = new URLSearchParams({ redirect: window.location.href })
+      window.location.href = `https://${serverHost}?${search.toString()}`
     }, timeout)
     let cancelled = false
     const cancel = () => {
@@ -24,15 +23,24 @@ export function WakeServer({
       clearTimeout(timer)
     }
     ;(async () => {
-      const awake = await isAwake()
+      const awake = await new Promise<boolean>((resolve) => {
+        const connection = new WebSocket(`wss://${serverHost}`)
+        connection.addEventListener('open', () => {
+          resolve(true)
+          connection.close()
+        })
+        connection.addEventListener('error', () => resolve(false))
+      })
       if (awake) {
-        if (!cancelled) onAwake()
+        if (!cancelled) {
+          setAwake(true)
+        }
         cancel()
       }
     })()
 
     return cancel
-  }, [timeout, isAwake, onAwake])
+  }, [timeout, serverHost])
 
   // count down
   const [second, setSecond] = React.useState(10)
@@ -58,6 +66,8 @@ export function WakeServer({
 
     return () => clearTimeout(timer)
   }, [timeout])
+
+  if (awake) return <>{children}</>
 
   return (
     <div

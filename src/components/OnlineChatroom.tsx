@@ -88,7 +88,7 @@ export function OnlineChatroom({
                   }}
                   startIcon={<KeyboardBackspace />}
                 >
-                  Leave
+                  Exit room
                 </Button>
               </Box>
             </Box>

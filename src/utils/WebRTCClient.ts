@@ -1,6 +1,6 @@
-import { Signaling } from './Signaling'
-import { EventHub } from './EventHub'
 import { STUN_SERVERS } from 'env'
+import { EventHub } from './EventHub'
+import { Signaling } from './Signaling'
 
 export type User = {
   id: string
@@ -21,16 +21,21 @@ export class WebRTCClient {
   private onUpdate: () => void
   private room: string
 
-  signaling = new Signaling()
+  signaling: Signaling
   users: Record<string, User> = {}
   userHub = new EventHub<[User, 'connect' | 'disconnect']>()
   messageHub = new EventHub<[User, Message]>()
   stateHub = new EventHub<[User, RTCDataChannelState]>()
   negotiatings = new Set<User['id']>()
 
-  constructor(room: WebRTCClient['room'], onUpdate: () => void) {
+  constructor(
+    serverHost: string,
+    room: WebRTCClient['room'],
+    onUpdate: () => void,
+  ) {
     this.room = room
     this.onUpdate = onUpdate
+    this.signaling = new Signaling(serverHost)
 
     const { signaling } = this
     signaling.tunnel.stateHub.addEventListener((state) => {

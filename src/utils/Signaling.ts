@@ -1,5 +1,5 @@
-import { Tunnel } from './Tunnel'
 import { EventHub } from './EventHub'
+import { Tunnel } from './Tunnel'
 
 export class Signaling {
   tunnel: Tunnel
@@ -9,8 +9,8 @@ export class Signaling {
   answerHub = new EventHub<[string, RTCSessionDescriptionInit]>()
   iceHub = new EventHub<[string, RTCIceCandidate | RTCIceCandidateInit]>()
 
-  constructor() {
-    this.tunnel = new Tunnel()
+  constructor(serverHost: string) {
+    this.tunnel = new Tunnel(serverHost)
     this.tunnel.messageHub.addEventListener((message) => {
       const { type, source, content } = message
       switch (type) {
