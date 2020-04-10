@@ -7,6 +7,7 @@ import {
   Visibility,
   VisibilityOff,
 } from '@material-ui/icons'
+import { DETECT_TRACKS } from 'env'
 import { useMedia } from 'hooks/useMedia'
 import * as React from 'react'
 import { useUpdateEffect } from 'react-use'
@@ -102,13 +103,29 @@ function Window({
   const [audioOn, setAudioOn] = React.useState(false)
   const [videoOn, setVideoOn] = React.useState(false)
 
-  React.useEffect(() => {
+  function detectTracks() {
     const videoTracks = stream.getVideoTracks()
     const audioTracks = stream.getAudioTracks()
+    console.log('tracks:', videoTracks, audioTracks)
     const audioOn = audioTracks.some((track) => track.enabled)
     const videoOn = videoTracks.some((track) => track.enabled)
     setAudioOn(audioOn)
     setVideoOn(videoOn)
+  }
+
+  React.useEffect(() => {
+    if (!DETECT_TRACKS) {
+      setAudioOn(true)
+      setVideoOn(true)
+      return
+    }
+    detectTracks()
+    stream.addEventListener('addtrack', detectTracks)
+    stream.addEventListener('removetrack', detectTracks)
+    return () => {
+      stream.removeEventListener('addtrack', detectTracks)
+      stream.removeEventListener('removetrack', detectTracks)
+    }
   }, [stream])
 
   return (
