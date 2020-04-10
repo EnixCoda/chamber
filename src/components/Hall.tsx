@@ -18,7 +18,7 @@ export function Hall({
   }, [room])
   const [value, setValue] = React.useState(
     room ||
-      Math.round(Math.random() * 0xffffff)
+      Math.round(Math.random() * 0xefff + 0x1000) // from 0x1000 to 0xffff
         .toString(16)
         .toUpperCase(),
   )
