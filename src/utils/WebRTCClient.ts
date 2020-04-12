@@ -26,7 +26,6 @@ export class WebRTCClient {
   userHub = new EventHub<[User, 'connect' | 'disconnect']>()
   messageHub = new EventHub<[User, Message]>()
   stateHub = new EventHub<[User, RTCDataChannelState]>()
-  negotiatings = new Set<User['id']>()
 
   constructor(
     serverHost: string,
@@ -45,7 +44,6 @@ export class WebRTCClient {
       this.onUpdate()
     })
     signaling.offerHub.addEventListener(async (source, remoteDescription) => {
-      this.negotiatings.add(source)
       const { users } = this
       const { connection } = users[source]
       await connection.setRemoteDescription(remoteDescription)
@@ -54,15 +52,12 @@ export class WebRTCClient {
       const localDescription = connection.localDescription
       if (localDescription === null) throw new Error(`No local description`)
       signaling.answer(source, localDescription)
-      this.negotiatings.delete(source)
       onUpdate()
     })
     signaling.answerHub.addEventListener(async (source, answer) => {
-      console.log(`on answer`)
       const { users } = this
       const { connection } = users[source]
       await connection.setRemoteDescription(answer)
-      this.negotiatings.delete(source)
       onUpdate()
     })
     signaling.iceHub.addEventListener((source, candidate) => {
@@ -132,13 +127,11 @@ export class WebRTCClient {
       this.onUpdate()
     })
     connection.addEventListener('negotiationneeded', async () => {
-      console.log(`on negotiation needed`)
-      if (this.negotiatings.has(id)) {
-        console.warn(`Already negeotiating with`, id)
+      const offer = await connection.createOffer()
+      if (connection.signalingState !== 'stable') {
+        console.warn(`Already negotiating with`, id)
         return
       }
-      this.negotiatings.add(id)
-      const offer = await connection.createOffer()
       await connection.setLocalDescription(offer)
       if (connection.localDescription === null) {
         throw new Error(`No local description`)
