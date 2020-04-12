@@ -1,16 +1,11 @@
 {
-  "include": [
-    "./src/*"
-  ],
+  "include": ["./src/"],
   "compilerOptions": {
     "strict": true,
     "target": "ES6",
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "Node",
-    "lib": [
-      "dom",
-      "es2015"
-    ],
+    "lib": ["es2015", "DOM", "ESNext"],
     "jsx": "react",
     "baseUrl": "src",
     "allowJs": true,

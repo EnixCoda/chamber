@@ -14,13 +14,43 @@ export function useMedia(
   )
   const stream: MediaStream | undefined = streams[user.id]
 
+  // update stream with constraints
   React.useEffect(() => {
-    if (stream) return () => stream.getTracks().forEach((track) => track.stop())
+    if (constraints.audio || constraints.video) {
+      let cancel = false
+      ;(async () => {
+        const stream = await navigator.mediaDevices.getUserMedia(constraints)
+        if (cancel) return
+        addStream(user, stream)
+      })()
+
+      return () => {
+        cancel = true
+        removeStream(user)
+      }
+    }
+  }, [user, constraints])
+
+  React.useEffect(() => {
+    if (!stream) return
+    return () => stream.getTracks().forEach((track) => track.stop())
   }, [stream])
 
   // feed local stream to users
   React.useEffect(() => {
     if (!stream) return
+
+    function feedStream(user: User, stream: MediaStream) {
+      const connection = user.connection
+      if (!connection) {
+        console.log(`cannot feed`, user.id, connection, stream)
+        return
+      }
+      const $tracks = stream.getTracks()
+      $tracks.forEach((track) => connection.addTrack(track, stream))
+      console.log(`feeding ${$tracks.length} tracks to`, user.id)
+    }
+
     Object.values(users)
       .filter(($user) => $user.id !== user.id)
       .forEach(($user) => feedStream($user, stream))
@@ -68,43 +98,25 @@ export function useMedia(
     }
   }, [deviceGroup])
 
-  // switch stream with constaints
-  React.useEffect(() => {
-    if (constraints.audio || constraints.video) {
-      let cancel = false
-      ;(async () => {
-        const stream = await navigator.mediaDevices.getUserMedia(constraints)
-        if (cancel) return
-        addStream(user, stream)
-      })()
-
-      return () => {
-        cancel = true
-        removeStream(user)
-      }
-    }
-  }, [user, constraints])
-
-  function listenToTracks(user: User) {
-    user.connection.addEventListener('track', ({ track }) => {
-      console.log(`got track from ${user.id}`, track.label || track.id)
-      setStreams((streams) => {
-        const { [user.id]: stream = new MediaStream() } = streams
-        stream.addTrack(track)
-        track.addEventListener('ended', () => stream.removeTrack(track))
-
-        return stream === streams[user.id]
-          ? streams
-          : {
-              ...streams,
-              [user.id]: stream,
-            }
-      })
-    })
-  }
-
   // listen to current and future users
   React.useEffect(() => {
+    function listenToTracks(user: User) {
+      user.connection.addEventListener('track', ({ track }) => {
+        console.log(`got track from ${user.id}`, track.label || track.id)
+        setStreams((streams) => {
+          const { [user.id]: stream = new MediaStream() } = streams
+          stream.addTrack(track)
+          track.addEventListener('ended', () => stream.removeTrack(track))
+
+          return stream === streams[user.id]
+            ? streams
+            : {
+                ...streams,
+                [user.id]: stream,
+              }
+        })
+      })
+    }
     Object.values(users)
       .filter(($user) => $user.id !== user.id)
       .forEach((user) => listenToTracks(user))
@@ -121,17 +133,6 @@ export function useMedia(
       }
     })
   }, [])
-
-  function feedStream(user: User, stream: MediaStream) {
-    const connection = user.connection
-    if (!connection) {
-      console.log(`cannot feed`, user.id, connection, stream)
-      return
-    }
-    const $tracks = stream.getTracks()
-    $tracks.forEach((track) => connection.addTrack(track))
-    console.log(`feeding ${$tracks.length} tracks to`, user.id)
-  }
 
   return {
     streams,

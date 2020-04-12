@@ -6,5 +6,6 @@ P2P chat room on Web.
 
 - Instant messaging with multiple people
 - Video & audio chat
-- File sharing(WIP)
 - All chating data are sent p2p
+- File sharing(WIP)
+- Offline signaling through data channel(WIP)

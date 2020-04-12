@@ -13,6 +13,8 @@ import * as React from 'react'
 import { useUpdateEffect } from 'react-use'
 import { OnlineWebRTCClient, User } from 'utils/WebRTCClient'
 
+const adjustConstraints = false
+
 export function Media({
   webrtc,
   names,
@@ -27,10 +29,18 @@ export function Media({
   return (
     <>
       {stream ? (
-        <ConstraintsMutator
-          constraints={constraints}
-          setConstraints={setConstraints}
-        />
+        adjustConstraints ? (
+          <ConstraintsMutator
+            constraints={constraints}
+            setConstraints={setConstraints}
+          />
+        ) : (
+          <div>
+            <Button onClick={() => setMedia({ video: false, audio: false })}>
+              Stop Sharing
+            </Button>
+          </div>
+        )
       ) : (
         <div>
           <Button onClick={() => setMedia({ video: true, audio: true })}>
@@ -120,10 +130,17 @@ function Window({
       return
     }
     detectTracks()
-    stream.addEventListener('addtrack', detectTracks)
+    const onAddTrack = ({ track }: MediaStreamTrackEvent): void => {
+      if (track.muted) {
+        track.addEventListener('unmute', detectTracks)
+      } else {
+        detectTracks()
+      }
+    }
+    stream.addEventListener('addtrack', onAddTrack)
     stream.addEventListener('removetrack', detectTracks)
     return () => {
-      stream.removeEventListener('addtrack', detectTracks)
+      stream.removeEventListener('addtrack', onAddTrack)
       stream.removeEventListener('removetrack', detectTracks)
     }
   }, [stream])

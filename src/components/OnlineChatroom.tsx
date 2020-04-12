@@ -66,6 +66,7 @@ export function OnlineChatroom({
             {state !== 'open' && (
               <Tooltip title="Refresh to reconnect">
                 <IconButton
+                  color="inherit"
                   size="small"
                   onClick={() => window.location.reload()}
                 >
