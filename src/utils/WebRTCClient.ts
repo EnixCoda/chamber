@@ -5,6 +5,7 @@ import { Signaling } from './Signaling'
 export type User = {
   id: string
   state: RTCDataChannelState
+  offering: boolean
   connection: RTCPeerConnection
   channel?: RTCDataChannel
 }
@@ -45,13 +46,25 @@ export class WebRTCClient {
     })
     signaling.offerHub.addEventListener(async (source, remoteDescription) => {
       const { users } = this
-      const { connection } = users[source]
+      const user = users[source]
+      const { connection } = user
+      if (connection.signalingState === 'closed') return
+
+      if (connection.signalingState !== 'stable' || users[source].offering) {
+        if (this.shouldBePoliteTo(user)) {
+          console.log(`Take collision offer`)
+        } else {
+          console.log(`Ignore collision offer`)
+          return
+        }
+      }
       await connection.setRemoteDescription(remoteDescription)
-      const answer = await connection.createAnswer()
-      await connection.setLocalDescription(answer)
+
+      await connection.setLocalDescription()
       const localDescription = connection.localDescription
       if (localDescription === null) throw new Error(`No local description`)
       signaling.answer(source, localDescription)
+
       onUpdate()
     })
     signaling.answerHub.addEventListener(async (source, answer) => {
@@ -62,8 +75,8 @@ export class WebRTCClient {
     })
     signaling.iceHub.addEventListener((source, candidate) => {
       const { users } = this
-      const { connection } = users[source]
-      connection.addIceCandidate(candidate)
+      const user = users[source]
+      user.connection.addIceCandidate(candidate)
     })
     signaling.syncHub.addEventListener(({ id, room }) => {
       // disconnect offline users
@@ -77,12 +90,27 @@ export class WebRTCClient {
         if (!this.users[id]) {
           const user: User = {
             id,
+            offering: false,
             state: 'connecting',
-            connection: this.createConnection(id),
+            connection: new RTCPeerConnection({
+              iceServers: [
+                {
+                  urls: STUN_SERVERS,
+                },
+              ],
+            }),
           }
+          this.setupUserConnection(user)
           this.users[id] = user
-          if (id > this.userID) this.onCallOut(this.users[id])
           this.userHub.emit(user, 'connect')
+          if (user.id !== this.userID) {
+            this.attachDataChannel(
+              user,
+              user.connection.createDataChannel(
+                `message-data-channel-${user.id}`,
+              ),
+            )
+          }
         }
       })
 
@@ -98,59 +126,68 @@ export class WebRTCClient {
     return this.signaling.tunnel.state
   }
 
-  onCallOut = async (user: User) => {
-    const { connection } = user
-    this.attachDataChannel(user, connection.createDataChannel('messages'))
-    this.onUpdate()
+  shouldBePoliteTo(user: User) {
+    if (!this.userID) throw new Error(`No self ID`)
+    // higher id has higher priority, be polite to it
+    // that is, when collision, accept remote
+    return user.id > this.userID
   }
 
-  createConnection = (id: User['id']) => {
-    const user = this.users[id]
-    if (user && user.connection) {
-      console.warn(`prevented overwriting connection`, id)
-      return user.connection
-    }
-    const connection = new RTCPeerConnection({
-      iceServers: [
-        {
-          urls: STUN_SERVERS,
-        },
-      ],
-    })
+  setupUserConnection = (user: User) => {
+    const { id, connection } = user
     connection.addEventListener('datachannel', ({ channel }) => {
-      const user = this.users[id]
       if (user.channel) {
-        console.warn(`already has channel`, channel === user.channel)
+        console.warn(`Received data channel while already have one`)
+        if (this.shouldBePoliteTo(user)) {
+          console.log(`Accepted remote data channel`)
+        } else {
+          return
+        }
       }
       // Callee setup data channel passively
       this.attachDataChannel(user, channel)
       this.onUpdate()
     })
     connection.addEventListener('negotiationneeded', async () => {
-      const offer = await connection.createOffer()
       if (connection.signalingState !== 'stable') {
-        console.warn(`Already negotiating with`, id)
+        console.warn(
+          `Another negotiation needed while already negotiating with`,
+          id,
+        )
         return
       }
-      await connection.setLocalDescription(offer)
-      if (connection.localDescription === null) {
-        throw new Error(`No local description`)
+
+      user.offering = true
+      try {
+        await connection.setLocalDescription()
+        if (connection.localDescription === null) {
+          throw new Error(`No local description`)
+        }
+        this.signaling.offer(id, connection.localDescription)
+      } finally {
+        user.offering = false
       }
-      this.signaling.offer(id, connection.localDescription)
     })
     connection.addEventListener('icecandidate', (e) => {
-      if (e.candidate === null) return
-      this.signaling.sendICECandidate(id, e.candidate)
+      if (e.candidate) this.signaling.sendICECandidate(id, e.candidate)
     })
+
+    connection.oniceconnectionstatechange = () => {
+      if (connection.iceConnectionState === 'failed') {
+        ;(connection as any)?.restartIce()
+      }
+    }
     return connection
   }
 
   attachDataChannel = (user: User, dataChannel: RTCDataChannel) => {
     if (user.channel) {
-      console.warn(`attaching channel while user already has one`)
+      console.warn(`Abandoning previous data channel`)
+      user.channel.close()
     }
     user.channel = dataChannel
     dataChannel.addEventListener('message', (event) => {
+      console.log(`Message from ${dataChannel.label}`, JSON.parse(event.data))
       this.messageHub.emit(user, JSON.parse(event.data))
     })
     dataChannel.addEventListener('open', () =>
@@ -159,6 +196,9 @@ export class WebRTCClient {
     dataChannel.addEventListener('close', () =>
       this.handleChannelStatusChange(user),
     )
+    dataChannel.addEventListener('error', (err) =>
+      console.error(`data channel error`, err),
+    )
     this.handleChannelStatusChange(user)
   }
 
@@ -166,6 +206,7 @@ export class WebRTCClient {
     const { channel } = user
     if (!channel) return
     user.state = channel.readyState
+    console.log(`data channel for ${user.id} switched to`, channel.readyState)
     this.stateHub.emit(user, channel.readyState)
     this.onUpdate()
   }
@@ -184,8 +225,24 @@ export class WebRTCClient {
   sendTo = (user: User, message: Message) => {
     if (user.id === this.userID) return
     const { channel } = user
-    if (!channel || channel.readyState !== 'open') {
-      console.warn(`data channel to`, user.id, `closed, cannot send`, message)
+    if (!channel) {
+      console.warn(`data channel to`, user.id, `not set yet`)
+      return
+    }
+    if (channel.readyState === 'connecting') {
+      console.warn(
+        `data channel to ` + user.id + ` is not open yet, delayed sending`,
+        message,
+      )
+      const sendOnOpenAndDeprecate = () => {
+        console.warn(
+          `data channel to ` + user.id + ` is open, sending`,
+          message,
+        )
+        channel.send(JSON.stringify(message))
+        channel.removeEventListener('open', sendOnOpenAndDeprecate)
+      }
+      channel.addEventListener('open', sendOnOpenAndDeprecate)
       return
     }
     channel.send(JSON.stringify(message))
