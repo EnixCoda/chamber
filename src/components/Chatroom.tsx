@@ -1,4 +1,5 @@
 import { CircularProgress, Typography } from '@material-ui/core'
+import { useVH } from 'components/VH'
 import { useWebRTC } from 'hooks/useWebRTC'
 import * as React from 'react'
 import { OnlineWebRTCClient } from 'utils/WebRTCClient'
@@ -14,6 +15,7 @@ export function Chatroom({
   serverHost: string
 }) {
   const webrtc = useWebRTC(serverHost, room)
+  const vhStyle = useVH()
   if (!webrtc.user) {
     return (
       <div
@@ -23,7 +25,7 @@ export function Chatroom({
           justifyContent: 'center',
           flexDirection: 'column',
           padding: 32,
-          height: 'calc(var(--vh, 1vh) * 100)',
+          ...vhStyle,
         }}
       >
         <CircularProgress />

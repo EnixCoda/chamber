@@ -16,6 +16,7 @@ import {
   Menu as MenuIcon,
   Refresh,
 } from '@material-ui/icons'
+import { useVH } from 'components/VH'
 import { useMessages } from 'hooks/useMessages'
 import { useUsernames } from 'hooks/useUsernames'
 import * as React from 'react'
@@ -33,6 +34,8 @@ export function OnlineChatroom({
   webrtc: OnlineWebRTCClient
   exitRoom(): void
 }) {
+  const vhStyle = useVH()
+
   const { state } = webrtc
   const { type, typings, speak, messages } = useMessages(webrtc)
   const { names, setName } = useUsernames(webrtc)
@@ -46,7 +49,7 @@ export function OnlineChatroom({
         style={{
           display: 'flex',
           flexDirection: 'column',
-          height: 'calc(var(--vh, 1vh) * 100)',
+          ...vhStyle,
         }}
       >
         <AppBar position="static">
