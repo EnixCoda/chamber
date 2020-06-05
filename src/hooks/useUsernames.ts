@@ -12,24 +12,24 @@ export function useUsernames({
   const [names, setNames] = React.useState<Record<User['id'], string>>({})
   const name = names[user.id]
 
-  // prompt for user preferred name once connected
+  // prompt for user preferred name
   React.useEffect(() => {
     if (!names[user.id]) {
       const preferredName = user.id // prompt(`May I have your name?`, user.id)
       setName(preferredName || user.id)
     }
-  }, [user])
+  }, [])
 
   React.useEffect(() => {
     if (name) Object.values(users).forEach(tellName)
-  }, [name])
+  }, [name, users])
 
   React.useEffect(() => {
     if (user)
       return stateHub.addEventListener((user, state) => {
         if (state === 'open') tellName(user)
       })
-  }, [user, name])
+  }, [stateHub, user, name])
 
   React.useEffect(() => {
     return messageHub.addEventListener((source, { type, content }) => {

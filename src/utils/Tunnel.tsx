@@ -1,5 +1,12 @@
 import { EventHub } from './EventHub'
 
+const webSocketStateMap = {
+  [WebSocket.CLOSED]: 'closed',
+  [WebSocket.CLOSING]: 'closing',
+  [WebSocket.CONNECTING]: 'connecting',
+  [WebSocket.OPEN]: 'open',
+} as const
+
 export class Tunnel {
   private connection: WebSocket
   serverHost: string
@@ -19,14 +26,7 @@ export class Tunnel {
   }
 
   get state() {
-    const connection = this.connection
-    const stateMap = {
-      [connection.CLOSED]: 'closed',
-      [connection.CLOSING]: 'closing',
-      [connection.CONNECTING]: 'connecting',
-      [connection.OPEN]: 'open',
-    } as const
-    return stateMap[connection.readyState]
+    return webSocketStateMap[this.connection.readyState]
   }
 
   private connect() {
@@ -55,10 +55,17 @@ export class Tunnel {
   }
 
   send(message: any) {
-    this.connection.send(JSON.stringify(message))
+    if (this.state === 'open') this.connection.send(JSON.stringify(message))
+    else
+      console.warn(
+        '[Tunnel]',
+        `Trying to send message while tunnel is ${this.state}`,
+        message,
+      )
   }
 
   disconnect() {
+    // necessary condition as disconnect is called in connect
     if (this.connection) {
       this.connection.close()
     }

@@ -123,7 +123,7 @@ function Window({
     function detectTracks() {
       const videoTracks = stream.getVideoTracks()
       const audioTracks = stream.getAudioTracks()
-      console.log('tracks:', videoTracks, audioTracks)
+      console.log('[Media]', 'tracks:', videoTracks, audioTracks)
       const audioOn = audioTracks.some((track) => track.enabled)
       const videoOn = videoTracks.some((track) => track.enabled)
       setAudioOn(audioOn)

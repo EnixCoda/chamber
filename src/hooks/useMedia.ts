@@ -49,12 +49,12 @@ export function useMedia(
     function feedStream(user: User, stream: MediaStream) {
       const connection = user.connection
       if (!connection) {
-        console.log(`cannot feed`, user.id, connection, stream)
+        console.log('[useMedia]', `cannot feed`, user.id, connection, stream)
         return
       }
       const $tracks = stream.getTracks()
       $tracks.forEach((track) => connection.addTrack(track, stream))
-      console.log(`feeding ${$tracks.length} tracks to`, user.id)
+      console.log('[useMedia]', `feeding ${$tracks.length} tracks to`, user.id)
     }
 
     Object.values(users)
@@ -68,7 +68,7 @@ export function useMedia(
         }
       }
     })
-  }, [stream, userHub, user.id])
+  }, [stream, userHub, user.id, users])
 
   function addStream(user: User, stream: MediaStream) {
     setStreams((streams) => ({
@@ -99,7 +99,7 @@ export function useMedia(
       } else {
         newConstrains.audio = true
       }
-      console.log(`new constains`, newConstrains)
+      console.log('[useMedia]', `new constrains`, newConstrains)
       setConstraints(newConstrains)
     }
   }, [deviceGroup])
@@ -108,7 +108,11 @@ export function useMedia(
   React.useEffect(() => {
     function listenToTracks(user: User) {
       user.connection.addEventListener('track', ({ track }) => {
-        console.log(`got track from ${user.id}`, track.label || track.id)
+        console.log(
+          '[useMedia]',
+          `got track from ${user.id}`,
+          track.label || track.id,
+        )
         setStreams((streams) => {
           const { [user.id]: stream = new MediaStream() } = streams
           stream.addTrack(track)
@@ -138,7 +142,7 @@ export function useMedia(
         }
       }
     })
-  }, [userHub, user.id])
+  }, [userHub, user.id, users])
 
   return {
     streams,
