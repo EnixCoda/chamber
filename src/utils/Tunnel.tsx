@@ -3,8 +3,11 @@ import { EventHub } from './EventHub'
 export class Tunnel {
   private connection: WebSocket
   serverHost: string
-  messageHub = new EventHub<[any]>()
-  stateHub = new EventHub<[Tunnel['state']]>()
+
+  eventHub = new EventHub<{
+    message: [any]
+    state: [Tunnel['state']]
+  }>(['message', 'state'])
 
   constructor(serverHost: string) {
     this.serverHost = serverHost
@@ -32,14 +35,20 @@ export class Tunnel {
     const connection = new WebSocket(`wss://${this.serverHost}`)
     this.connection = connection
 
-    connection.addEventListener('open', () => this.stateHub.emit(this.state))
+    connection.addEventListener('open', () =>
+      this.eventHub.ports.state.emit(this.state),
+    )
 
-    connection.addEventListener('close', () => this.stateHub.emit(this.state))
+    connection.addEventListener('close', () =>
+      this.eventHub.ports.state.emit(this.state),
+    )
 
-    connection.addEventListener('error', () => this.stateHub.emit(this.state))
+    connection.addEventListener('error', () =>
+      this.eventHub.ports.state.emit(this.state),
+    )
 
     connection.addEventListener('message', (event) => {
-      this.messageHub.emit(JSON.parse(event.data))
+      this.eventHub.ports.message.emit(JSON.parse(event.data))
     })
 
     return connection

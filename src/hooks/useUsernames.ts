@@ -5,8 +5,9 @@ export function useUsernames({
   sendTo,
   user,
   users,
-  messageHub,
-  stateHub,
+  eventHub: {
+    ports: { message: messageHub, state: stateHub },
+  },
 }: OnlineWebRTCClient) {
   const [names, setNames] = React.useState<Record<User['id'], string>>({})
   const name = names[user.id]

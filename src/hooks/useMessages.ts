@@ -19,7 +19,9 @@ const clearTypeTimeout = 2 * 1000
 export function useMessages({
   broadcast,
   user,
-  messageHub,
+  eventHub: {
+    ports: { message: messageHub },
+  },
 }: OnlineWebRTCClient) {
   const typings: Record<User['id'], number> = {}
   const type = throttle(function type() {

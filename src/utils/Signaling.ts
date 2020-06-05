@@ -4,27 +4,29 @@ import { Tunnel } from './Tunnel'
 export class Signaling {
   tunnel: Tunnel
 
-  syncHub = new EventHub<[{ id: string; room: string[] }]>()
-  offerHub = new EventHub<[string, RTCSessionDescriptionInit]>()
-  answerHub = new EventHub<[string, RTCSessionDescriptionInit]>()
-  iceHub = new EventHub<[string, RTCIceCandidate | RTCIceCandidateInit]>()
+  eventHub = new EventHub<{
+    sync: [{ id: string; room: string[] }]
+    offer: [string, RTCSessionDescriptionInit]
+    answer: [string, RTCSessionDescriptionInit]
+    ice: [string, RTCIceCandidate | RTCIceCandidateInit]
+  }>(['answer', 'ice', 'offer', 'sync'])
 
   constructor(serverHost: string) {
     this.tunnel = new Tunnel(serverHost)
-    this.tunnel.messageHub.addEventListener((message) => {
+    this.tunnel.eventHub.ports.message.addEventListener((message) => {
       const { type, source, content } = message
       switch (type) {
         case 'sync':
-          this.syncHub.emit(content)
+          this.eventHub.ports.sync.emit(content)
           break
         case 'offer':
-          this.offerHub.emit(source, content)
+          this.eventHub.ports.offer.emit(source, content)
           break
         case 'answer':
-          this.answerHub.emit(source, content)
+          this.eventHub.ports.answer.emit(source, content)
           break
         case 'ice-candidate':
-          this.iceHub.emit(source, content)
+          this.eventHub.ports.ice.emit(source, content)
           break
       }
     })

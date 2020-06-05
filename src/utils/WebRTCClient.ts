@@ -24,9 +24,11 @@ export class WebRTCClient {
 
   signaling: Signaling
   users: Record<string, User> = {}
-  userHub = new EventHub<[User, 'connect' | 'disconnect']>()
-  messageHub = new EventHub<[User, Message]>()
-  stateHub = new EventHub<[User, RTCDataChannelState]>()
+  eventHub = new EventHub<{
+    user: [User, 'connect' | 'disconnect']
+    message: [User, Message]
+    state: [User, RTCDataChannelState]
+  }>(['user', 'message', 'state'])
 
   constructor(
     serverHost: string,
@@ -38,47 +40,49 @@ export class WebRTCClient {
     this.signaling = new Signaling(serverHost)
 
     const { signaling } = this
-    signaling.tunnel.stateHub.addEventListener((state) => {
+    signaling.tunnel.eventHub.ports.state.addEventListener((state) => {
       if (state === 'open') {
         signaling.joinRoom(this.room)
       }
       this.onUpdate()
     })
-    signaling.offerHub.addEventListener(async (source, remoteDescription) => {
-      const { users } = this
-      const user = users[source]
-      const { connection } = user
-      if (connection.signalingState === 'closed') return
+    signaling.eventHub.ports.offer.addEventListener(
+      async (source, remoteDescription) => {
+        const { users } = this
+        const user = users[source]
+        const { connection } = user
+        if (connection.signalingState === 'closed') return
 
-      if (connection.signalingState !== 'stable' || users[source].offering) {
-        if (this.shouldBePoliteTo(user)) {
-          console.log(`Take collision offer`)
-        } else {
-          console.log(`Ignore collision offer`)
-          return
+        if (connection.signalingState !== 'stable' || users[source].offering) {
+          if (this.shouldBePoliteTo(user)) {
+            console.log(`Take collision offer`)
+          } else {
+            console.log(`Ignore collision offer`)
+            return
+          }
         }
-      }
-      await connection.setRemoteDescription(remoteDescription)
+        await connection.setRemoteDescription(remoteDescription)
 
-      await connection.setLocalDescription()
-      const localDescription = connection.localDescription
-      if (localDescription === null) throw new Error(`No local description`)
-      signaling.answer(source, localDescription)
+        await connection.setLocalDescription()
+        const localDescription = connection.localDescription
+        if (localDescription === null) throw new Error(`No local description`)
+        signaling.answer(source, localDescription)
 
-      onUpdate()
-    })
-    signaling.answerHub.addEventListener(async (source, answer) => {
+        onUpdate()
+      },
+    )
+    signaling.eventHub.ports.answer.addEventListener(async (source, answer) => {
       const { users } = this
       const { connection } = users[source]
       await connection.setRemoteDescription(answer)
       onUpdate()
     })
-    signaling.iceHub.addEventListener((source, candidate) => {
+    signaling.eventHub.ports.ice.addEventListener((source, candidate) => {
       const { users } = this
       const user = users[source]
       user.connection.addIceCandidate(candidate)
     })
-    signaling.syncHub.addEventListener(({ id, room }) => {
+    signaling.eventHub.ports.sync.addEventListener(({ id, room }) => {
       // disconnect offline users
       Object.keys(this.users).forEach((id) => {
         if (!room.includes(id)) this.disconnect(this.users[id])
@@ -102,7 +106,7 @@ export class WebRTCClient {
           }
           this.setupUserConnection(user)
           this.users[id] = user
-          this.userHub.emit(user, 'connect')
+          this.eventHub.ports.user.emit(user, 'connect')
           if (user.id !== this.userID) {
             this.attachDataChannel(
               user,
@@ -188,7 +192,7 @@ export class WebRTCClient {
     user.channel = dataChannel
     dataChannel.addEventListener('message', (event) => {
       console.log(`Message from ${dataChannel.label}`, JSON.parse(event.data))
-      this.messageHub.emit(user, JSON.parse(event.data))
+      this.eventHub.ports.message.emit(user, JSON.parse(event.data))
     })
     dataChannel.addEventListener('open', () =>
       this.handleChannelStatusChange(user),
@@ -207,7 +211,7 @@ export class WebRTCClient {
     if (!channel) return
     user.state = channel.readyState
     console.log(`data channel for ${user.id} switched to`, channel.readyState)
-    this.stateHub.emit(user, channel.readyState)
+    this.eventHub.ports.state.emit(user, channel.readyState)
     this.onUpdate()
   }
 
@@ -219,7 +223,7 @@ export class WebRTCClient {
 
     Reflect.deleteProperty(this.users, user.id)
 
-    this.userHub.emit(user, 'disconnect')
+    this.eventHub.ports.user.emit(user, 'disconnect')
   }
 
   sendTo = (user: User, message: Message) => {

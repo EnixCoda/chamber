@@ -1,22 +1,51 @@
-export class EventHub<
-  EventData extends any[],
-  Listener extends (...eventData: EventData) => void = (
-    ...eventData: EventData
-  ) => void
+class EventSubscription<
+  Data extends any[],
+  Listener extends (...data: Data) => void = (...eventData: Data) => void
 > {
-  listeners: (Listener)[] = []
+  listeners: Listener[] = []
 
-  emit(...eventData: EventData) {
-    this.listeners.forEach((listener) => listener(...eventData))
+  emit(...data: Data) {
+    this.listeners.forEach((listener) => listener(...data))
   }
 
   addEventListener(listener: Listener) {
     this.listeners.push(listener)
-    return () => this.removeListener(listener)
+    return () => this.removeEventListener(listener)
   }
 
-  removeListener(listener: Listener) {
+  removeEventListener(listener: Listener) {
     const index = this.listeners.indexOf(listener)
     if (index !== -1) this.listeners.splice(index, 1)
+  }
+}
+
+export class EventHub<
+  Shape extends {
+    [event: string]: any[]
+  }
+> {
+  ports: {
+    [key in keyof Shape]: EventSubscription<Shape[key]>
+  }
+
+  constructor(events: (keyof Shape)[]) {
+    this.ports = events.reduce((hub, event) => {
+      hub[event] = new EventSubscription<Shape[typeof event]>()
+      return hub
+    }, {} as EventHub<Shape>['ports'])
+  }
+
+  addEventListener<Event extends keyof Shape>(
+    event: Event,
+    listener: (...args: Shape[Event]) => void,
+  ) {
+    this.ports[event].addEventListener(listener)
+  }
+
+  removeEventListener<Event extends keyof Shape>(
+    event: Event,
+    listener: (...args: Shape[Event]) => void,
+  ) {
+    this.ports[event].removeEventListener(listener)
   }
 }

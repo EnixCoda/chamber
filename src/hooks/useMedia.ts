@@ -2,7 +2,13 @@ import * as React from 'react'
 import { OnlineWebRTCClient, User } from 'utils/WebRTCClient'
 
 export function useMedia(
-  { user, users, userHub }: OnlineWebRTCClient,
+  {
+    user,
+    users,
+    eventHub: {
+      ports: { user: userHub },
+    },
+  }: OnlineWebRTCClient,
   deviceGroup?: Partial<Record<MediaDeviceInfo['kind'], MediaDeviceInfo>>,
 ) {
   const [constraints, setConstraints] = React.useState<MediaStreamConstraints>({
