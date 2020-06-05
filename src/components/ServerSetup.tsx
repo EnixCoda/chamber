@@ -8,7 +8,7 @@ import {
 import { DEFAULT_SERVER, SERVER_HOST } from 'env'
 import * as React from 'react'
 
-export function SetServer({
+export function ServerSetup({
   children,
 }: {
   children(serverHost: string): React.ReactNode

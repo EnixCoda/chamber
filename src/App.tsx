@@ -1,8 +1,8 @@
 import { createMuiTheme, ThemeProvider } from '@material-ui/core'
 import { Client } from 'components/Client'
-import { SetServer } from 'components/SetServer'
+import { ServerSetup } from 'components/ServerSetup'
+import { ServerWaker } from 'components/ServerWaker'
 import { VH } from 'components/VH'
-import { WakeServer } from 'components/WakeServer'
 import * as React from 'react'
 import './styles.css'
 
@@ -22,13 +22,13 @@ export default function App() {
     <VH>
       <div style={{ display: 'flex', justifyContent: 'center' }}>
         <ThemeProvider theme={theme}>
-          <SetServer>
+          <ServerSetup>
             {(serverHost) => (
-              <WakeServer serverHost={serverHost}>
+              <ServerWaker serverHost={serverHost}>
                 <Client serverHost={serverHost} />
-              </WakeServer>
+              </ServerWaker>
             )}
-          </SetServer>
+          </ServerSetup>
         </ThemeProvider>
       </div>
     </VH>

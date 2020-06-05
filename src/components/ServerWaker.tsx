@@ -1,14 +1,16 @@
 import { CircularProgress, Typography } from '@material-ui/core'
+import { useVH } from 'components/VH'
 import * as React from 'react'
 
 const timeout = 10 * 1000
 
-export function WakeServer({
+export function ServerWaker({
   serverHost,
   children,
 }: React.PropsWithChildren<{
   serverHost: string
 }>) {
+  const vhStyle = useVH()
   const [awake, setAwake] = React.useState(false)
   const [showHint, setShowHint] = React.useState(false)
 
@@ -77,7 +79,7 @@ export function WakeServer({
         justifyContent: 'center',
         flexDirection: 'column',
         padding: 32,
-        height: 'calc(var(--vh, 1vh) * 100)',
+        ...vhStyle,
       }}
     >
       <CircularProgress />
