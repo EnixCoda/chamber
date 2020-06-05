@@ -7,6 +7,7 @@ import {
 } from '@material-ui/core'
 import { DEFAULT_SERVER, SERVER_HOST } from 'env'
 import * as React from 'react'
+import { isLocalhost } from '../utils/isLocalhost'
 
 export function ServerSetup({
   children,
@@ -29,7 +30,7 @@ export function ServerSetup({
 
   function parseInput(input: string) {
     try {
-      if (!input.match(/\.\w/)) return false
+      if (!input.match(/\.\w/) && !isLocalhost(input)) return false
       const url = new URL('https://' + input)
       return url.host + url.pathname
     } catch (err) {
@@ -46,7 +47,9 @@ export function ServerSetup({
         label="Signaling Server"
         InputProps={{
           startAdornment: (
-            <InputAdornment position="start">https://</InputAdornment>
+            <InputAdornment position="start">
+              {isLocalhost(serverInput) ? 'http' : 'https'}://
+            </InputAdornment>
           ),
         }}
         placeholder="signaling-server.com"

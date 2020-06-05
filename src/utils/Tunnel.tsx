@@ -1,4 +1,5 @@
 import { EventHub } from './EventHub'
+import { isLocalhost } from './isLocalhost'
 
 const webSocketStateMap = {
   [WebSocket.CLOSED]: 'closed',
@@ -32,7 +33,9 @@ export class Tunnel {
   private connect() {
     this.disconnect()
 
-    const connection = new WebSocket(`wss://${this.serverHost}`)
+    const connection = new WebSocket(
+      `${isLocalhost(this.serverHost) ? 'ws' : 'wss'}://${this.serverHost}`,
+    )
     this.connection = connection
 
     connection.addEventListener('open', () =>

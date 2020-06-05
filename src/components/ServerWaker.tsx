@@ -1,6 +1,7 @@
 import { CircularProgress, Typography } from '@material-ui/core'
 import { useVH } from 'components/VH'
 import * as React from 'react'
+import { isLocalhost } from 'utils/isLocalhost'
 
 const timeout = 10 * 1000
 
@@ -17,7 +18,12 @@ export function ServerWaker({
   React.useEffect(() => {
     const timer = setTimeout(() => {
       const search = new URLSearchParams({ redirect: window.location.href })
-      window.location.href = `https://${serverHost}?${search.toString()}`
+      const url = new URL(
+        `${
+          isLocalhost(serverHost) ? 'http' : 'https'
+        }://${serverHost}?${search.toString()}`,
+      )
+      window.location.href = url.href
     }, timeout)
     let cancelled = false
     const cancel = () => {
@@ -26,7 +32,9 @@ export function ServerWaker({
     }
     ;(async () => {
       const awake = await new Promise<boolean>((resolve) => {
-        const connection = new WebSocket(`wss://${serverHost}`)
+        const connection = new WebSocket(
+          `${isLocalhost(serverHost) ? 'ws' : 'wss'}://${serverHost}`,
+        )
         connection.addEventListener('open', () => {
           resolve(true)
           connection.close()
