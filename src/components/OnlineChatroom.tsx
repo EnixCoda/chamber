@@ -37,7 +37,7 @@ export function OnlineChatroom({
   const vhStyle = useVH()
 
   const { state } = webrtc
-  const { type, typings, speak, messages } = useMessages(webrtc)
+  const { handleType, typings, speak, messages } = useMessages(webrtc)
   const { names, setName } = useUsernames(webrtc)
 
   const typingsDescription = formatTypings(typings, names)
@@ -107,7 +107,7 @@ export function OnlineChatroom({
           <MessageInput
             typingsDescription={typingsDescription}
             speak={speak}
-            type={type}
+            handleType={handleType}
           />
         </Grid>
       </div>

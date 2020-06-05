@@ -178,7 +178,7 @@ export class WebRTCClient {
 
     connection.oniceconnectionstatechange = () => {
       if (connection.iceConnectionState === 'failed') {
-        ;(connection as any)?.restartIce()
+        ;(connection as any).restartIce?.()
       }
     }
     return connection
@@ -254,10 +254,6 @@ export class WebRTCClient {
 
   broadcast = (message: Message) => {
     Object.values(this.users).forEach((user) => this.sendTo(user, message))
-  }
-
-  connect = () => {
-    this.signaling.connect()
   }
 
   destruct = () => {

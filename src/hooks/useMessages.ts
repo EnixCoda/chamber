@@ -23,29 +23,10 @@ export function useMessages({
     ports: { message: messageHub },
   },
 }: OnlineWebRTCClient) {
-  const typings: Record<User['id'], number> = {}
-  const type = throttle(function type() {
+  const typings = React.useRef<Record<User['id'], number>>({})
+  const handleType = throttle(function handleType() {
     broadcast({ type: 'typing', content: '' })
   }, sendTypePeriod)
-
-  function clearTypingTimer(user: User) {
-    const timer = typings[user.id]
-    if (timer) {
-      window.clearTimeout(timer)
-    }
-  }
-
-  function onTyping(user: User) {
-    clearTypingTimer(user)
-    typings[user.id] = window.setTimeout(() => {
-      onTypingEnd(user)
-    }, clearTypeTimeout)
-  }
-
-  function onTypingEnd(user: User) {
-    clearTypingTimer(user)
-    Reflect.deleteProperty(typings, user.id)
-  }
 
   const [messages, setMessages] = React.useState<
     { source: User; content: string }[]
@@ -60,6 +41,25 @@ export function useMessages({
     setMessages((messages) => [...messages, { source, content }])
 
   React.useEffect(() => {
+    function onTyping(user: User) {
+      clearTypingTimer(user)
+      typings.current[user.id] = window.setTimeout(() => {
+        onTypingEnd(user)
+      }, clearTypeTimeout)
+    }
+
+    function onTypingEnd(user: User) {
+      clearTypingTimer(user)
+      Reflect.deleteProperty(typings.current, user.id)
+    }
+
+    function clearTypingTimer(user: User) {
+      const timer = typings.current[user.id]
+      if (timer) {
+        window.clearTimeout(timer)
+      }
+    }
+
     return messageHub.addEventListener(function handleMessage(
       source,
       { type, content },
@@ -74,11 +74,11 @@ export function useMessages({
           break
       }
     })
-  }, [])
+  }, [messageHub])
 
   return {
-    typings,
-    type,
+    typings: typings.current,
+    handleType,
     messages,
     speak,
   }

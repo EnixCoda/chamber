@@ -39,7 +39,7 @@ export function RoomInfo({
   const name = user && names[user.id]
   React.useEffect(() => {
     if (name !== localName) setLocalName(name)
-  }, [name])
+  }, [name]) // eslint-disable-line
 
   React.useEffect(() => {
     if (state === 'closed') setEditingName(false)
@@ -57,8 +57,9 @@ export function RoomInfo({
         overflowY: 'auto',
       }}
       subheader={
-        <ListSubheader>{`${peers.length +
-          1} people in the room`}</ListSubheader>
+        <ListSubheader>{`${
+          peers.length + 1
+        } people in the room`}</ListSubheader>
       }
     >
       <ListItem key={user.id}>

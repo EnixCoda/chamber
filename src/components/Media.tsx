@@ -113,21 +113,21 @@ function Window({
   const [audioOn, setAudioOn] = React.useState(false)
   const [videoOn, setVideoOn] = React.useState(false)
 
-  function detectTracks() {
-    const videoTracks = stream.getVideoTracks()
-    const audioTracks = stream.getAudioTracks()
-    console.log('tracks:', videoTracks, audioTracks)
-    const audioOn = audioTracks.some((track) => track.enabled)
-    const videoOn = videoTracks.some((track) => track.enabled)
-    setAudioOn(audioOn)
-    setVideoOn(videoOn)
-  }
-
   React.useEffect(() => {
     if (!DETECT_TRACKS) {
       setAudioOn(true)
       setVideoOn(true)
       return
+    }
+
+    function detectTracks() {
+      const videoTracks = stream.getVideoTracks()
+      const audioTracks = stream.getAudioTracks()
+      console.log('tracks:', videoTracks, audioTracks)
+      const audioOn = audioTracks.some((track) => track.enabled)
+      const videoOn = videoTracks.some((track) => track.enabled)
+      setAudioOn(audioOn)
+      setVideoOn(videoOn)
     }
     detectTracks()
     const onAddTrack = ({ track }: MediaStreamTrackEvent): void => {

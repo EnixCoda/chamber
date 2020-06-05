@@ -29,7 +29,7 @@ export class Tunnel {
     return stateMap[connection.readyState]
   }
 
-  connect() {
+  private connect() {
     this.disconnect()
 
     const connection = new WebSocket(`wss://${this.serverHost}`)
@@ -47,9 +47,9 @@ export class Tunnel {
       this.eventHub.ports.state.emit(this.state),
     )
 
-    connection.addEventListener('message', (event) => {
-      this.eventHub.ports.message.emit(JSON.parse(event.data))
-    })
+    connection.addEventListener('message', (event) =>
+      this.eventHub.ports.message.emit(JSON.parse(event.data)),
+    )
 
     return connection
   }

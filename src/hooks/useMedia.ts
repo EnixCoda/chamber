@@ -68,7 +68,7 @@ export function useMedia(
         }
       }
     })
-  }, [stream])
+  }, [stream, userHub, user.id])
 
   function addStream(user: User, stream: MediaStream) {
     setStreams((streams) => ({
@@ -138,7 +138,7 @@ export function useMedia(
         }
       }
     })
-  }, [])
+  }, [userHub, user.id])
 
   return {
     streams,

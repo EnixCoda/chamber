@@ -42,7 +42,7 @@ export function ServerWaker({
     })()
 
     return cancel
-  }, [timeout, serverHost])
+  }, [serverHost])
 
   // count down
   const [second, setSecond] = React.useState(10)
@@ -67,7 +67,7 @@ export function ServerWaker({
     }, timeout / 2)
 
     return () => clearTimeout(timer)
-  }, [timeout])
+  }, [])
 
   if (awake) return <>{children}</>
 

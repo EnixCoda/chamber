@@ -4,17 +4,17 @@ import * as React from 'react'
 
 export function MessageInput({
   speak,
-  type,
+  handleType,
   typingsDescription,
 }: {
   speak(content: string): void
-  type(): void
+  handleType(): void
   typingsDescription?: string
 }) {
   const [value, setValue] = React.useState<string>('')
   React.useEffect(() => {
-    if (value) type()
-  }, [value])
+    if (value) handleType()
+  }, [value]) // eslint-disable-line
   function sendInput() {
     speak(value)
     setValue('')

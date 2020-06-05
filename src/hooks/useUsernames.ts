@@ -35,18 +35,19 @@ export function useUsernames({
     return messageHub.addEventListener((source, { type, content }) => {
       switch (type) {
         case 'name':
-          setName(content, source.id)
+          const id = source.id
+          if (id) setNames((names) => ({ ...names, [id]: content }))
           break
       }
     })
-  }, [])
+  }, [messageHub])
 
   function setName(name: string, id = user.id) {
     if (id) setNames((names) => ({ ...names, [id]: name }))
   }
 
   function tellName($user: User) {
-    if (user) sendTo($user, { type: 'name', content: names[user.id] })
+    sendTo($user, { type: 'name', content: names[user.id] })
   }
 
   return { name, names, setName }
