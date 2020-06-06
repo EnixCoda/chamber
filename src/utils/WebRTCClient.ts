@@ -3,10 +3,11 @@ import { waitForNextEvent } from 'utils'
 import { assert } from './assert'
 import { EventHub } from './EventHub'
 import { Signaling } from './Signaling'
+import { Tunnel } from './Tunnel'
 
 export type User = {
   id: string
-  state: RTCDataChannelState
+  state: Tunnel['state']
   offering: boolean
   connection: RTCPeerConnection
   channel?: DataChannel
@@ -179,13 +180,19 @@ export class WebRTCClient {
           this.setupUserConnection(user)
           this.users[id] = user
           this.eventHub.emit('user', [user, 'connect'])
-          if (this.shouldBePoliteTo(user))
+          if (this.shouldBePoliteTo(user)) {
+            console.log(
+              `[WebRTCClient]`,
+              `Attaching data channel to ${user.id}`,
+            )
+
             this.attachDataChannel(
               user,
               user.connection.createDataChannel(
                 `message-data-channel-${this.userID}-to-${user.id}`,
               ),
             )
+          }
         }
       })
 
@@ -201,11 +208,8 @@ export class WebRTCClient {
           '[WebRTCClient]',
           `Received data channel while already have one`,
         )
-        if (this.shouldBePoliteTo(user)) {
-          console.log('[WebRTCClient]', `Accept remote data channel`)
-        } else {
-          return
-        }
+      } else {
+        console.log('[WebRTCClient]', `Received data channel`)
       }
       // Callee setup data channel passively
       this.attachDataChannel(user, channel)
@@ -250,6 +254,13 @@ export class WebRTCClient {
     }
     const channel = new DataChannel(dataChannel)
     user.channel = channel
+
+    if (dataChannel.readyState !== 'connecting')
+      console.warn(
+        `[WebRTCClient]`,
+        `data channel is ${dataChannel.readyState} when attaching`,
+      )
+
     channel.addEventListener('message', (event) => {
       console.log(
         '[WebRTCClient]',
@@ -260,21 +271,21 @@ export class WebRTCClient {
     })
     channel.addEventListener('open', () => {
       assert(user.channel?.native === dataChannel, { debug: true })
-      this.handleChannelStatusChange(channel, user)
+      this.handleChannelStatusChange(channel.native, user)
     })
     channel.addEventListener('close', () => {
       assert(user.channel?.native === dataChannel, { debug: true })
-      this.handleChannelStatusChange(channel, user)
+      this.handleChannelStatusChange(channel.native, user)
     })
     channel.addEventListener('error', (err) => {
       assert(user.channel?.native === dataChannel, { debug: true })
       console.error('[WebRTCClient]', `data channel error`, err)
     })
-    this.handleChannelStatusChange(channel, user)
+    this.onUpdate()
   }
 
-  private handleChannelStatusChange(channel: DataChannel, user: User) {
-    const state = channel.native.readyState
+  private handleChannelStatusChange(channel: RTCDataChannel, user: User) {
+    const state = channel.readyState
     user.state = state
     console.log(
       '[WebRTCClient]',
@@ -303,22 +314,28 @@ export class WebRTCClient {
       console.warn('[WebRTCClient]', `data channel to`, user.id, `not set yet`)
       return
     }
-    if (channel.native.readyState === 'connecting') {
-      console.warn(
-        '[WebRTCClient]',
-        `data channel to ` + user.id + ` is not open yet, delayed sending`,
-        message,
-      )
-      await waitForNextEvent(channel, 'open', () => {
+    switch (channel.native.readyState) {
+      case 'closed':
+      case 'closing':
+        console.error(
+          `Trying to send message while channel is ${channel.native.readyState}`,
+        )
+        return
+      case 'connecting': {
         console.warn(
           '[WebRTCClient]',
-          `data channel to ` + user.id + ` is open, sending`,
+          `data channel to ` + user.id + ` is not open yet, delayed sending`,
           message,
         )
-        channel.native.send(JSON.stringify(message))
-      })
-      return
+        await waitForNextEvent(channel, 'open')
+        console.warn(
+          '[WebRTCClient]',
+          `data channel to ` + user.id + ` is open now, sending delayed`,
+          message,
+        )
+      }
     }
+    console.log(`[WebRTCClient]`, `sending`, message)
     channel.native.send(JSON.stringify(message))
   }
 
