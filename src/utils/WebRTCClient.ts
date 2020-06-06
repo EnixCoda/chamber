@@ -1,4 +1,5 @@
 import { STUN_SERVERS } from 'env'
+import { waitForNextEvent } from 'utils'
 import { assert } from './assert'
 import { EventHub } from './EventHub'
 import { Signaling } from './Signaling'
@@ -41,7 +42,7 @@ export class WebRTCClient {
     this.room = room
     this.onUpdate = onUpdate
     this.signaling = new Signaling(serverHost)
-    this.setupSignaling()
+    this.setupSignaling(this.signaling)
   }
 
   get user() {
@@ -109,11 +110,39 @@ export class WebRTCClient {
       if (!user.connection.remoteDescription) {
         console.warn(
           `[WebRTCClient]`,
-          `skipping ice candidate due to no remote description`,
+          `delaying ice candidate due to no remote description`,
         )
-      } else {
-        user.connection.addIceCandidate(candidate)
+        // wait for remote offer or connection close
+        await new Promise((resolve, reject) => {
+          const waitForOffer = () => {
+            switch (user.connection.signalingState) {
+              case 'have-remote-offer': {
+                console.log(
+                  `[WebRTCClient]`,
+                  `adding candidate as remote offer is available`,
+                )
+                user.connection.removeEventListener(
+                  'signalingstatechange',
+                  waitForOffer,
+                )
+                resolve()
+                break
+              }
+              case 'closed': {
+                console.log(`[WebRTCClient]`, `stop waiting for remote offer`)
+                reject()
+                user.connection.removeEventListener(
+                  'signalingstatechange',
+                  waitForOffer,
+                )
+                break
+              }
+            }
+          }
+          user.connection.addEventListener('signalingstatechange', waitForOffer)
+        })
       }
+      user.connection.addIceCandidate(candidate)
     })
     signaling.eventHub.addEventListener('sync', ({ id, room }) => {
       // disconnect offline users
@@ -219,8 +248,9 @@ export class WebRTCClient {
       console.warn('[WebRTCClient]', `Abandoning previous data channel`)
       user.channel.destruct()
     }
-    user.channel = new DataChannel(dataChannel)
-    user.channel.addEventListener('message', (event) => {
+    const channel = new DataChannel(dataChannel)
+    user.channel = channel
+    channel.addEventListener('message', (event) => {
       console.log(
         '[WebRTCClient]',
         `Message from ${dataChannel.label}`,
@@ -263,10 +293,10 @@ export class WebRTCClient {
 
     Reflect.deleteProperty(this.users, user.id)
 
-    this.eventHub.ports.user.emit(user, 'disconnect')
+    this.eventHub.emit('user', [user, 'disconnect'])
   }
 
-  sendTo = (user: User, message: Message) => {
+  sendTo = async (user: User, message: Message) => {
     if (user.id === this.userID) return
     const { channel } = user
     if (!channel) {
@@ -279,7 +309,7 @@ export class WebRTCClient {
         `data channel to ` + user.id + ` is not open yet, delayed sending`,
         message,
       )
-      channel.addOneTimeEventListener('open', () => {
+      await waitForNextEvent(channel, 'open', () => {
         console.warn(
           '[WebRTCClient]',
           `data channel to ` + user.id + ` is open, sending`,
@@ -302,12 +332,15 @@ export class WebRTCClient {
   }
 }
 
+// TODO: revert to RTCDataChannel
 class DataChannel {
-  native: RTCDataChannel
   private unsubscriptions: (() => void)[] = []
+  native: RTCDataChannel
+  removeEventListener: RTCDataChannel['removeEventListener']
 
   constructor(channel: RTCDataChannel) {
     this.native = channel
+    this.removeEventListener = this.native.removeEventListener.bind(this.native)
   }
 
   destruct() {
@@ -324,24 +357,5 @@ class DataChannel {
       this.native.removeEventListener(type, listener, options),
     )
     return this.native.addEventListener(type, listener, options)
-  }
-
-  addOneTimeEventListener<K extends keyof RTCDataChannelEventMap>(
-    type: K,
-    listener: (this: RTCDataChannel, ev: RTCDataChannelEventMap[K]) => any,
-    options?: boolean | AddEventListenerOptions,
-  ) {
-    const unsubscribe = () =>
-      this.native.removeEventListener(type, wrappedListener, options)
-
-    function wrappedListener(
-      this: RTCDataChannel,
-      ev: RTCDataChannelEventMap[K],
-    ) {
-      unsubscribe()
-      return listener.call(this, ev)
-    }
-
-    return this.native.addEventListener(type, wrappedListener, options)
   }
 }
