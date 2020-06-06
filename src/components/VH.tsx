@@ -7,16 +7,22 @@ const variableName = '--vh'
 function setViewHeight() {
   const vh = window.innerHeight * 0.01
   document.documentElement.style.setProperty(variableName, `${vh}px`)
+
+  return () => document.documentElement.style.removeProperty(variableName)
 }
 
 export function VH(props: React.PropsWithChildren<{}>) {
   React.useLayoutEffect(() => {
     if (lock) return
     lock = true
-    setViewHeight()
+    const removeStyle = setViewHeight()
 
     window.addEventListener('resize', setViewHeight)
-    return () => window.removeEventListener('resize', setViewHeight)
+    return () => {
+      lock = false
+      removeStyle()
+      window.removeEventListener('resize', setViewHeight)
+    }
   }, [])
 
   return <>{props.children}</>
