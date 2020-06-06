@@ -13,20 +13,20 @@ export class Signaling {
 
   constructor(serverHost: string) {
     this.tunnel = new Tunnel(serverHost)
-    this.tunnel.eventHub.ports.message.addEventListener((message) => {
+    this.tunnel.eventHub.addEventListener('message', (message) => {
       const { type, source, content } = message
       switch (type) {
         case 'sync':
-          this.eventHub.ports.sync.emit(content)
+          this.eventHub.emit('sync', [content])
           break
         case 'offer':
-          this.eventHub.ports.offer.emit(source, content)
+          this.eventHub.emit('offer', [source, content])
           break
         case 'answer':
-          this.eventHub.ports.answer.emit(source, content)
+          this.eventHub.emit('answer', [source, content])
           break
         case 'ice-candidate':
-          this.eventHub.ports.ice.emit(source, content)
+          this.eventHub.emit('ice', [source, content])
           break
         default:
           console.warn('[Signaling]', `Unknown signaling message`, message)

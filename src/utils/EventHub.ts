@@ -35,17 +35,21 @@ export class EventHub<
     }, {} as EventHub<Shape>['ports'])
   }
 
+  emit<Event extends keyof Shape>(event: Event, data: Shape[Event]) {
+    return this.ports[event].emit(...data)
+  }
+
   addEventListener<Event extends keyof Shape>(
     event: Event,
     listener: (...args: Shape[Event]) => void,
   ) {
-    this.ports[event].addEventListener(listener)
+    return this.ports[event].addEventListener(listener)
   }
 
   removeEventListener<Event extends keyof Shape>(
     event: Event,
     listener: (...args: Shape[Event]) => void,
   ) {
-    this.ports[event].removeEventListener(listener)
+    return this.ports[event].removeEventListener(listener)
   }
 }

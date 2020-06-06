@@ -16,13 +16,7 @@ function throttle<FN extends (...args: any[]) => void>(
 const sendTypePeriod = 1 * 1000
 const clearTypeTimeout = 2 * 1000
 
-export function useMessages({
-  broadcast,
-  user,
-  eventHub: {
-    ports: { message: messageHub },
-  },
-}: OnlineWebRTCClient) {
+export function useMessages({ broadcast, user, eventHub }: OnlineWebRTCClient) {
   const typings = React.useRef<Record<User['id'], number>>({})
   const handleType = throttle(function handleType() {
     broadcast({ type: 'typing', content: '' })
@@ -60,7 +54,7 @@ export function useMessages({
       }
     }
 
-    return messageHub.addEventListener(function handleMessage(
+    return eventHub.addEventListener('message', function handleMessage(
       source,
       { type, content },
     ) {
@@ -74,7 +68,7 @@ export function useMessages({
           break
       }
     })
-  }, [messageHub])
+  }, [eventHub])
 
   return {
     typings: typings.current,

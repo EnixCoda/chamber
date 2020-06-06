@@ -5,9 +5,7 @@ export function useUsernames({
   sendTo,
   user,
   users,
-  eventHub: {
-    ports: { message: messageHub, state: stateHub },
-  },
+  eventHub,
 }: OnlineWebRTCClient) {
   const [names, setNames] = React.useState<Record<User['id'], string>>({})
   const name = names[user.id]
@@ -26,13 +24,13 @@ export function useUsernames({
 
   React.useEffect(() => {
     if (user)
-      return stateHub.addEventListener((user, state) => {
+      return eventHub.addEventListener('state', (user, state) => {
         if (state === 'open') tellName(user)
       })
-  }, [stateHub, user, name])
+  }, [eventHub, user, name])
 
   React.useEffect(() => {
-    return messageHub.addEventListener((source, { type, content }) => {
+    return eventHub.addEventListener('message', (source, { type, content }) => {
       switch (type) {
         case 'name':
           const id = source.id
@@ -40,7 +38,7 @@ export function useUsernames({
           break
       }
     })
-  }, [messageHub])
+  }, [eventHub])
 
   function setName(name: string, id = user.id) {
     if (id) setNames((names) => ({ ...names, [id]: name }))

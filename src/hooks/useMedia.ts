@@ -2,13 +2,7 @@ import * as React from 'react'
 import { OnlineWebRTCClient, User } from 'utils/WebRTCClient'
 
 export function useMedia(
-  {
-    user,
-    users,
-    eventHub: {
-      ports: { user: userHub },
-    },
-  }: OnlineWebRTCClient,
+  { user, users, eventHub }: OnlineWebRTCClient,
   deviceGroup?: Partial<Record<MediaDeviceInfo['kind'], MediaDeviceInfo>>,
 ) {
   const [constraints, setConstraints] = React.useState<MediaStreamConstraints>({
@@ -60,7 +54,7 @@ export function useMedia(
     Object.values(users)
       .filter(($user) => $user.id !== user.id)
       .forEach(($user) => feedStream($user, stream))
-    return userHub.addEventListener((user, type) => {
+    return eventHub.addEventListener('user', (user, type) => {
       switch (type) {
         case 'connect': {
           feedStream(user, stream)
@@ -68,7 +62,7 @@ export function useMedia(
         }
       }
     })
-  }, [stream, userHub, user.id, users])
+  }, [stream, eventHub, user.id, users])
 
   function addStream(user: User, stream: MediaStream) {
     setStreams((streams) => ({
@@ -131,7 +125,7 @@ export function useMedia(
       .filter(($user) => $user.id !== user.id)
       .forEach((user) => listenToTracks(user))
 
-    return userHub.addEventListener((user, type) => {
+    return eventHub.addEventListener('user', (user, type) => {
       switch (type) {
         case 'connect': {
           listenToTracks(user)
@@ -142,7 +136,7 @@ export function useMedia(
         }
       }
     })
-  }, [userHub, user.id, users])
+  }, [eventHub, user.id, users])
 
   return {
     streams,

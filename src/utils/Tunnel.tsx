@@ -39,19 +39,19 @@ export class Tunnel {
     this.connection = connection
 
     connection.addEventListener('open', () =>
-      this.eventHub.ports.state.emit(this.state),
+      this.eventHub.emit('state', [this.state]),
     )
 
     connection.addEventListener('close', () =>
-      this.eventHub.ports.state.emit(this.state),
+      this.eventHub.emit('state', [this.state]),
     )
 
     connection.addEventListener('error', () =>
-      this.eventHub.ports.state.emit(this.state),
+      this.eventHub.emit('state', [this.state]),
     )
 
     connection.addEventListener('message', (event) =>
-      this.eventHub.ports.message.emit(JSON.parse(event.data)),
+      this.eventHub.emit('message', [JSON.parse(event.data)]),
     )
 
     return connection
