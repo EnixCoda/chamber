@@ -215,7 +215,6 @@ export class WebRTCClient {
   }
 
   private attachDataChannel(user: User, dataChannel: RTCDataChannel) {
-    // debugger
     if (user.channel) {
       console.warn('[WebRTCClient]', `Abandoning previous data channel`)
       user.channel.destruct()
