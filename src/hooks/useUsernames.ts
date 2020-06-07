@@ -5,19 +5,23 @@ export function useUsernames({
   sendTo,
   user,
   users,
-  state,
   eventHub,
 }: OnlineWebRTCClient) {
   const [names, setNames] = React.useState<Record<User['id'], string>>({})
   const name = names[user.id]
 
+  const setName = React.useCallback(
+    function setName(name: string, id = user.id) {
+      if (id) setNames((names) => ({ ...names, [id]: name }))
+    },
+    [user.id],
+  )
+
   // prompt for user preferred name
   React.useEffect(() => {
-    if (!names[user.id]) {
-      const preferredName = user.id // prompt(`May I have your name?`, user.id)
-      setName(preferredName || user.id)
-    }
-  }, [])
+    const preferredName = user.id // prompt(`May I have your name?`, user.id)
+    setName(preferredName || user.id)
+  }, [setName, user.id])
 
   React.useEffect(() => {
     function tellName($user: User) {
@@ -32,7 +36,7 @@ export function useUsernames({
         if (state === 'open') tellName(user)
       })
     }
-  }, [eventHub, users, name])
+  }, [eventHub, users, name, sendTo]) // eslint-disable-line
 
   React.useEffect(() => {
     return eventHub.addEventListener('message', (source, { type, content }) => {
@@ -44,10 +48,6 @@ export function useUsernames({
       }
     })
   }, [eventHub])
-
-  function setName(name: string, id = user.id) {
-    if (id) setNames((names) => ({ ...names, [id]: name }))
-  }
 
   return { name, names, setName }
 }
