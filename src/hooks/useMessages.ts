@@ -1,5 +1,7 @@
 import * as React from 'react'
 import { OnlineWebRTCClient, User } from 'utils/WebRTCClient'
+import { useDataChannel } from './useDataChannel'
+import { useRerender } from './useRerender'
 
 function throttle<FN extends (...args: any[]) => void>(
   fn: FN,
@@ -16,63 +18,62 @@ function throttle<FN extends (...args: any[]) => void>(
 const sendTypePeriod = 1 * 1000
 const clearTypeTimeout = 2 * 1000
 
-export function useMessages({ broadcast, user, eventHub }: OnlineWebRTCClient) {
-  const typings = React.useRef<Record<User['id'], number>>({})
-  const handleType = throttle(function handleType() {
-    broadcast({ type: 'typing', content: '' })
-  }, sendTypePeriod)
+export function useMessages(webrtc: OnlineWebRTCClient) {
+  const { user } = webrtc
 
+  const rerender = useRerender()
+  const typingsRef = React.useRef<Record<User['id'], number>>({})
+  const typingsChannel = useDataChannel(webrtc, 'typing', (user) => {
+    handleOthersType(user)
+  })
+  const handleSelfType = React.useCallback(
+    throttle(() => typingsChannel.broadcast(''), sendTypePeriod),
+    [typingsChannel.broadcast],
+  )
+
+  function handleOthersType(user: User) {
+    clearTypingTimer(user)
+    typingsRef.current[user.id] = window.setTimeout(() => {
+      onTypingEnd(user)
+    }, clearTypeTimeout)
+    rerender()
+  }
+
+  function onTypingEnd(user: User) {
+    clearTypingTimer(user)
+    rerender()
+  }
+
+  function clearTypingTimer(user: User) {
+    const timer = typingsRef.current[user.id]
+    if (timer) {
+      window.clearTimeout(timer)
+      Reflect.deleteProperty(typingsRef.current, user.id)
+    }
+  }
+
+  const speakChannel = useDataChannel<string>(
+    webrtc,
+    'speak',
+    (user, content) => {
+      onSpeak(user, content)
+      onTypingEnd(user)
+    },
+  )
   const [messages, setMessages] = React.useState<
     { source: User; content: string }[]
   >([])
-
   function speak(content: string) {
-    broadcast({ type: 'speak', content })
+    speakChannel.broadcast(content)
     onSpeak(user, content)
   }
-
-  const onSpeak = (source: User, content: string) =>
+  function onSpeak(source: User, content: string) {
     setMessages((messages) => [...messages, { source, content }])
-
-  React.useEffect(() => {
-    function onTyping(user: User) {
-      clearTypingTimer(user)
-      typings.current[user.id] = window.setTimeout(() => {
-        onTypingEnd(user)
-      }, clearTypeTimeout)
-    }
-
-    function onTypingEnd(user: User) {
-      clearTypingTimer(user)
-      Reflect.deleteProperty(typings.current, user.id)
-    }
-
-    function clearTypingTimer(user: User) {
-      const timer = typings.current[user.id]
-      if (timer) {
-        window.clearTimeout(timer)
-      }
-    }
-
-    return eventHub.addEventListener('message', function handleMessage(
-      source,
-      { type, content },
-    ) {
-      switch (type) {
-        case 'speak':
-          onSpeak(source, content)
-          onTypingEnd(source)
-          break
-        case 'typing':
-          onTyping(source)
-          break
-      }
-    })
-  }, [eventHub])
+  }
 
   return {
-    typings: typings.current,
-    handleType,
+    typings: Object.keys(typingsRef.current),
+    handleType: handleSelfType,
     messages,
     speak,
   }

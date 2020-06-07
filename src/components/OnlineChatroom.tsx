@@ -40,8 +40,6 @@ export function OnlineChatroom({
   const { handleType, typings, speak, messages } = useMessages(webrtc)
   const { names, setName } = useUsernames(webrtc)
 
-  const typingsDescription = formatTypings(typings, names)
-
   const [open, setOpen] = React.useState(false)
   return (
     <Paper style={{ maxWidth: '480px', width: '100%' }}>
@@ -105,7 +103,7 @@ export function OnlineChatroom({
         <Divider />
         <Grid item>
           <MessageInput
-            typingsDescription={typingsDescription}
+            typingsDescription={formatTypings(typings, names)}
             speak={speak}
             handleType={handleType}
           />
@@ -115,20 +113,14 @@ export function OnlineChatroom({
   )
 }
 
-function formatTypings(
-  typings: Record<string, number>,
-  names: Record<string, string>,
-) {
-  const typingList = Object.keys(typings)
-  const typingsDescription = typingList.length
-    ? typingList
+function formatTypings(typings: string[], names: Record<string, string>) {
+  const typingsDescription = typings.length
+    ? typings
         .slice(0, 3)
         .map((id) => names[id])
         .join(', ') +
-      (typingList.length > 3
-        ? ` and ${typingList.length - 3} more users`
-        : ``) +
-      (typingList.length > 1 ? ' are' : ' is') +
+      (typings.length > 3 ? ` and ${typings.length - 3} more users` : ``) +
+      (typings.length > 1 ? ' are' : ' is') +
       ' typing...'
     : ''
   return typingsDescription
