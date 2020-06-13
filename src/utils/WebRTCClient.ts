@@ -345,7 +345,7 @@ export class WebRTCClient {
 
   destruct() {
     this.signaling.destruct()
-    Object.values(this.users).forEach(this.disconnect)
+    Object.values(this.users).forEach((user) => this.disconnect(user))
   }
 }
 

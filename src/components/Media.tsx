@@ -1,19 +1,43 @@
-import { Box, Button, IconButton } from '@material-ui/core'
-import {
-  Block,
-  Mic,
-  MicOff,
-  Videocam,
-  Visibility,
-  VisibilityOff,
-} from '@material-ui/icons'
-import { DETECT_TRACKS } from 'env'
+import { Box, Button } from '@material-ui/core'
+import { Videocam } from '@material-ui/icons'
 import { useMedia } from 'hooks/useMedia'
 import * as React from 'react'
-import { useUpdateEffect } from 'react-use'
 import { OnlineWebRTCClient, User } from 'utils/WebRTCClient'
+import { ConstraintsMutator } from './ConstraintsMutator'
+import { RemoteMedia } from './RemoteMedia'
+import { Window } from './Window'
 
 const adjustConstraints = false
+
+function useUserMedia() {
+  const [stream, setStream] = React.useState<MediaStream | null>(null)
+
+  React.useEffect(() => {
+    if (stream) {
+      return () =>
+        stream.getTracks().forEach((track) => {
+          console.log(`[Media]`, `Stopping track`, track.id)
+          track.stop()
+          stream.removeTrack(track)
+        })
+    }
+  }, [stream])
+
+  return {
+    stream,
+    async toggleStream(open: boolean) {
+      if (open) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        })
+        setStream(stream)
+      } else {
+        setStream(null)
+      }
+    },
+  }
+}
 
 export function Media({
   webrtc,
@@ -22,178 +46,45 @@ export function Media({
   webrtc: OnlineWebRTCClient
   names: Record<User['id'], string>
 }) {
-  const { streams, setMedia, constraints, setConstraints } = useMedia(webrtc)
+  const { stream, toggleStream } = useUserMedia()
+  const { constraints, setConstraints } = useMedia(webrtc)
 
-  const user = webrtc.user
-  const stream = streams[user.id]
   return (
     <>
+      {stream && adjustConstraints && (
+        <ConstraintsMutator
+          constraints={constraints}
+          setConstraints={setConstraints}
+        />
+      )}
       {stream ? (
-        adjustConstraints ? (
-          <ConstraintsMutator
-            constraints={constraints}
-            setConstraints={setConstraints}
-          />
-        ) : (
-          <div>
-            <Button onClick={() => setMedia({ video: false, audio: false })}>
-              Stop Sharing
-            </Button>
-          </div>
-        )
+        <div>
+          <Button onClick={() => toggleStream(false)}>Stop Sharing</Button>
+        </div>
       ) : (
         <div>
-          <Button onClick={() => setMedia({ video: true, audio: true })}>
+          <Button onClick={() => toggleStream(true)}>
             <Videocam /> Share video
           </Button>
         </div>
       )}
       <Box display="flex" flexWrap="wrap" width="100%" overflow="auto">
-        {Object.keys(streams).map((id) => (
-          <Window
-            key={id}
-            name={names[id]}
-            stream={streams[id]}
-            muted={user.id === id}
-          />
-        ))}
+        {stream && (
+          <Window name={names[webrtc.user.id]} stream={stream} muted />
+        )}
+
+        {Object.values(webrtc.users).map(
+          (user) =>
+            user !== webrtc.user && (
+              <RemoteMedia
+                key={user.id}
+                user={user}
+                name={names[user.id]}
+                localStream={stream}
+              />
+            ),
+        )}
       </Box>
     </>
-  )
-}
-
-function ConstraintsMutator({
-  constraints,
-  setConstraints,
-}: {
-  constraints: MediaStreamConstraints
-  setConstraints(constraints: MediaStreamConstraints): void
-}) {
-  const [videoOn, setVideoOn] = React.useState(Boolean(constraints.video))
-  const [audioOn, setAudioOn] = React.useState(Boolean(constraints.audio))
-
-  useUpdateEffect(() => {
-    if (
-      videoOn === Boolean(constraints.video) &&
-      audioOn === Boolean(constraints.audio)
-    )
-      return
-    setConstraints({
-      video: videoOn,
-      audio: audioOn,
-    })
-  }, [videoOn, audioOn])
-
-  return (
-    <div>
-      <IconButton onClick={() => setVideoOn((on) => !on)}>
-        {videoOn ? <Visibility /> : <VisibilityOff />}
-      </IconButton>
-      <IconButton onClick={() => setAudioOn((on) => !on)}>
-        {audioOn ? <Mic /> : <MicOff />}
-      </IconButton>
-    </div>
-  )
-}
-
-function Window({
-  name,
-  stream,
-  muted,
-}: {
-  stream: MediaStream
-  name?: string
-  muted?: boolean
-}) {
-  const videoRef = React.useRef<HTMLVideoElement>(null)
-  React.useEffect(() => {
-    if (videoRef.current) videoRef.current.srcObject = stream
-  }, [stream])
-
-  const [audioOn, setAudioOn] = React.useState(false)
-  const [videoOn, setVideoOn] = React.useState(false)
-
-  React.useEffect(() => {
-    if (!DETECT_TRACKS) {
-      setAudioOn(true)
-      setVideoOn(true)
-      return
-    }
-
-    function detectTracks() {
-      const videoTracks = stream.getVideoTracks()
-      const audioTracks = stream.getAudioTracks()
-      console.log('[Media]', 'tracks:', videoTracks, audioTracks)
-      const audioOn = audioTracks.some((track) => track.enabled)
-      const videoOn = videoTracks.some((track) => track.enabled)
-      setAudioOn(audioOn)
-      setVideoOn(videoOn)
-    }
-    detectTracks()
-    const onAddTrack = ({ track }: MediaStreamTrackEvent): void => {
-      if (track.muted) {
-        track.addEventListener('unmute', detectTracks)
-      } else {
-        detectTracks()
-      }
-    }
-    stream.addEventListener('addtrack', onAddTrack)
-    stream.addEventListener('removetrack', detectTracks)
-    return () => {
-      stream.removeEventListener('addtrack', onAddTrack)
-      stream.removeEventListener('removetrack', detectTracks)
-    }
-  }, [stream])
-
-  return (
-    <div style={{ position: 'relative', width: 160, height: 90 }}>
-      <span
-        style={{
-          position: 'absolute',
-          color: 'white',
-          textShadow:
-            '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000',
-        }}
-      >
-        {name}
-      </span>
-      {(!audioOn || !videoOn) && (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            position: 'absolute',
-            width: '100%',
-            height: '100%',
-            color: '#fff',
-            fontFamily: 'sans-serif',
-          }}
-        >
-          {audioOn ? (
-            <>
-              <span>SOUND</span>
-              <span>ONLY</span>
-            </>
-          ) : videoOn ? (
-            <MicOff />
-          ) : (
-            <Block />
-          )}
-        </div>
-      )}
-      <video
-        style={{
-          width: '100%',
-          height: '100%',
-          background: '#000',
-        }}
-        playsInline
-        autoPlay
-        muted={muted}
-        ref={videoRef}
-      />
-    </div>
   )
 }
