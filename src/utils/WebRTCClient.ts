@@ -177,7 +177,7 @@ export class WebRTCClient {
           }
           console.log(`[WebRTCClient]`, `adding user ${id}`)
 
-          this.setupUserConnection(user)
+          if (user.id !== this.userID) this.setupUserConnection(user)
           this.users[id] = user
           this.eventHub.emit('user', [user, 'connect'])
           if (this.shouldBePoliteTo(user)) {
