@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { waitForNextEvent } from 'utils'
 import { User } from 'utils/WebRTCClient'
 import { Window } from './Window'
 
@@ -19,12 +20,22 @@ export function RemoteMedia({
   // feed local stream to users
   React.useEffect(() => {
     if (localStream) {
-      const tracks = localStream.getTracks()
-      const senders = tracks.map((track) => {
-        console.log('[RemoteMedia]', `feeding track to`, user.id, track.id)
-        return user.connection.addTrack(track, localStream)
-      })
-      setSenders(senders)
+      ;(async function () {
+        if (user.connection.connectionState !== 'connected') {
+          await waitForNextEvent(
+            user.connection,
+            'connectionstatechange',
+            () => user.connection.connectionState === 'connected',
+          )
+        }
+
+        const tracks = localStream.getTracks()
+        const senders = tracks.map((track) => {
+          console.log('[RemoteMedia]', `feeding track to`, user.id, track.id)
+          return user.connection.addTrack(track, localStream)
+        })
+        setSenders(senders)
+      })()
     } else {
       setSenders(null)
     }

@@ -15,11 +15,14 @@ export async function waitForNextEvent<
     removeEventListener(event: EventType, listener: (...args: Args) => any): any
   },
   event: EventType,
+  condition: (...args: Args) => boolean = () => true,
 ) {
   return new Promise<Args>((resolve) => {
     const wrappedListener = (...args: Args): any => {
-      resolve(args)
-      target.removeEventListener(event, wrappedListener)
+      if (condition(...args)) {
+        resolve(args)
+        target.removeEventListener(event, wrappedListener)
+      }
     }
     target.addEventListener(event, wrappedListener)
   })
