@@ -1,0 +1,19 @@
+{
+  "name": "chamber-signaling-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "ts-node-dev ./src/index.ts"
+  },
+  "dependencies": {
+    "@types/websocket": "1.0.0",
+    "websocket": "1.0.31"
+  },
+  "devDependencies": {
+    "@types/node": "12.7.3",
+    "ts-node-dev": "^1.0.0-pre.42",
+    "typescript": "3.6.2"
+  },
+  "keywords": []
+}
