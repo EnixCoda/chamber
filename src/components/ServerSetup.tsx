@@ -16,11 +16,15 @@ export function ServerSetup({
 }) {
   const [serverInput, setServerInput] = React.useState(() => {
     const search = new URLSearchParams(window.location.search)
-    return search.get('server') || SERVER_HOST || ''
+    return search.get('server') || ''
   })
   const [server, setServer] = React.useState(
     () => parseInput(serverInput) || '',
   )
+
+  React.useEffect(() => {
+    if (serverInput === '') setServerInput(SERVER_HOST)
+  }, [])
 
   React.useEffect(() => {
     const search = new URLSearchParams(window.location.search)
@@ -56,8 +60,11 @@ export function ServerSetup({
         value={serverInput}
         onChange={(e) => setServerInput(e.target.value)}
         error={!parsedHost}
-        helperText={`Signaling server help you get contact with peers. But the chat messages and video stream will not be exposed to it.`}
       />
+      <Typography variant="caption">
+        Signaling server helps you find peers to communicate with. But chat
+        messages and media stream will not be exposed to it.
+      </Typography>
       <Button
         fullWidth
         variant="contained"

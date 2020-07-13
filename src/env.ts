@@ -1,5 +1,5 @@
-export const SERVER_HOST = process.env.REACT_APP_SERVER_HOST
-export const DEFAULT_SERVER = process.env.REACT_APP_DEFAULT_SERVER
+export const SERVER_HOST = process.env.REACT_APP_SERVER_HOST || ''
+export const DEFAULT_SERVER = process.env.REACT_APP_DEFAULT_SERVER || ''
 
 export const DETECT_TRACKS = process.env.REACT_APP_DETECT_TRACKS === 'true' // TODO: detect tracks accurately
 
