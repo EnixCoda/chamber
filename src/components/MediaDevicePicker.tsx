@@ -20,7 +20,13 @@ export function MediaDeviceSelector({
         native
         value={value}
         onChange={(e) =>
-          onChange(e.target.value as MediaDeviceInfo | undefined)
+          onChange(
+            group.find(
+              ({ deviceId }) =>
+                deviceId ===
+                (e.target.value as MediaDeviceInfo['deviceId'] | undefined),
+            ),
+          )
         }
       >
         {group.map(

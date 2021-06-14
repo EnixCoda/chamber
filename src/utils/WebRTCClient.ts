@@ -22,6 +22,12 @@ export interface OnlineWebRTCClient extends WebRTCClient {
   user: User
 }
 
+export function isOnlineWebRTCClient(
+  webRTCClient: WebRTCClient,
+): webRTCClient is OnlineWebRTCClient {
+  return webRTCClient.user !== null
+}
+
 export class WebRTCClient {
   private userID: string | null = null
   private onUpdate: () => void
@@ -241,7 +247,7 @@ export class WebRTCClient {
     })
     connection.addEventListener('iceconnectionstatechange', () => {
       if (connection.iceConnectionState === 'failed') {
-        ;(connection as any).restartIce?.()
+        connection.restartIce?.()
       }
     })
     return connection

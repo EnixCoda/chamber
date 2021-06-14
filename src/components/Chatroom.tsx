@@ -2,7 +2,7 @@ import { CircularProgress, Typography } from '@material-ui/core'
 import { useVH } from 'components/VH'
 import { useWebRTC } from 'hooks/useWebRTC'
 import * as React from 'react'
-import { OnlineWebRTCClient } from 'utils/WebRTCClient'
+import { isOnlineWebRTCClient } from 'utils/WebRTCClient'
 import { OnlineChatroom } from './OnlineChatroom'
 
 export function Chatroom({
@@ -16,7 +16,7 @@ export function Chatroom({
 }) {
   const webrtc = useWebRTC(serverHost, room)
   const vhStyle = useVH()
-  if (!webrtc.user) {
+  if (!isOnlineWebRTCClient(webrtc)) {
     return (
       <div
         style={{
@@ -33,7 +33,6 @@ export function Chatroom({
       </div>
     )
   }
-  return (
-    <OnlineChatroom webrtc={webrtc as OnlineWebRTCClient} exitRoom={exitRoom} />
-  )
+
+  return <OnlineChatroom webrtc={webrtc} exitRoom={exitRoom} />
 }
