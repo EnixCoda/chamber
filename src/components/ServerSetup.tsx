@@ -24,7 +24,7 @@ export function ServerSetup({
 
   React.useEffect(() => {
     if (serverInput === '') setServerInput(SERVER_HOST)
-  }, [])
+  }, []) // eslint-disable-line
 
   React.useEffect(() => {
     const search = new URLSearchParams(window.location.search)
