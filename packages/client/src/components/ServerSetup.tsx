@@ -16,7 +16,7 @@ export function ServerSetup({
 }) {
   const [serverInput, setServerInput] = React.useState(() => {
     const search = new URLSearchParams(window.location.search)
-    return search.get('server') || SERVER_HOST
+    return search.get('server') || ''
   })
   const [server, setServer] = React.useState(
     () => parseInput(serverInput) || '',
@@ -57,6 +57,7 @@ export function ServerSetup({
           ),
         }}
         placeholder="signaling-server.com"
+        defaultValue={serverInput || SERVER_HOST}
         value={serverInput}
         onChange={(e) => setServerInput(e.target.value)}
         error={!parsedHost}
