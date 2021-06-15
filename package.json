@@ -4,6 +4,12 @@
   "private": true,
   "author": "EnixCoda <enixcoda@gmail.com>",
   "license": "MIT",
+  "scripts": {
+    "start": "yarn workspace chamber-signaling-server run start"
+  },
+  "devDependencies": {
+    "nodemon": "1.18.4"
+  },
   "workspaces": {
     "packages": [
       "packages/*"
