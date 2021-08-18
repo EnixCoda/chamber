@@ -22,7 +22,10 @@ export function MessageInput({
   const blockSend = !value
 
   return (
-    <Tooltip open title={<>{typingsDescription}</>}>
+    <Tooltip
+      open={Boolean(typingsDescription)}
+      title={<>{typingsDescription}</>}
+    >
       <Box display="flex" alignItems="flex-end" padding={1}>
         <Box flex="1">
           <TextField

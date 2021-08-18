@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { OnlineWebRTCClient } from 'utils/WebRTCClient'
 
-export function useMedia(
+export function useMediaConstraints(
   { user }: OnlineWebRTCClient,
   deviceGroup?: Partial<Record<MediaDeviceInfo['kind'], MediaDeviceInfo>>,
 ) {

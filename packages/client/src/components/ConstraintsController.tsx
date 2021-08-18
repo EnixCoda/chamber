@@ -3,7 +3,7 @@ import { Mic, MicOff, Visibility, VisibilityOff } from '@material-ui/icons'
 import * as React from 'react'
 import { useUpdateEffect } from 'react-use'
 
-export function ConstraintsMutator({
+export function ConstraintsController({
   constraints,
   setConstraints,
 }: {
