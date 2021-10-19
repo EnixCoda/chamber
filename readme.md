@@ -4,9 +4,10 @@ Multi person P2P chat room on Web.
 
 ## Features
 
-- Instant share messages, video, and audio between multiple peers
-- Messages and media stream are sent between peers directly, not through server
-- Alternative signaling server available
+- Instant share messages, video, audio and even screen recording
+- Share between multiple users
+- Sharing data are sent to peers privately, not through servers
+- You can setup your own signaling server to obtain full privacy
 
 ## Signaling Server
 
